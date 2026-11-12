@@ -1,0 +1,3236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投资项目财务评估系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@600;800&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+:root{
+  --ink:#141625; --ink2:#3c4152; --mut:#71778a;
+  --bg:#f6f6f2; --paper:#ffffff; --line:#e4e2dc; --line2:#efece5;
+  --accent:#9a7422; --accent-strong:#b0882e; --accent-bg:#f6efdd;
+  --ok:#157347; --ok-bg:#e4f2ea; --bad:#b02a37; --bad-bg:#fbe9eb;
+  --navbg:#141625;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',sans-serif;
+  --serif:'Noto Serif SC','Songti SC','SimSun',serif;
+}
+[data-theme="dark"]{
+  --ink:#e9ebf4; --ink2:#c6cad9; --mut:#8b90a5;
+  --bg:#0e1018; --paper:#181b27; --line:#2b2f40; --line2:#232737;
+  --accent:#d9b45c; --accent-strong:#e3c470; --accent-bg:#2b2413;
+  --ok:#4cc38a; --ok-bg:#12291e; --bad:#f16a76; --bad-bg:#33161b;
+  --navbg:#0a0c12;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;min-height:100dvh;transition:background .25s,color .25s}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{cursor:pointer;font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ===== 顶栏 ===== */
+.topbar{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#171a2b 0%,var(--navbg) 60%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;gap:24px;box-shadow:0 2px 18px rgba(10,12,20,.35)}
+.topbar .logo{display:flex;align-items:center;gap:12px;font-weight:700;font-size:17px;letter-spacing:.02em;white-space:nowrap;flex:none}
+.topbar .logo svg{flex:none;filter:drop-shadow(0 0 6px rgba(217,180,92,.45))}
+.topbar .sub{font-size:12px;color:#9aa0b4;font-family:var(--mono);letter-spacing:.08em}
+.pillnav{margin-left:auto;background:rgba(255,255,255,.08);border-radius:100px;padding:4px;display:flex;gap:2px}
+.pillnav button{border:0;background:transparent;color:#c6cad8;font-size:14px;padding:8px 16px;border-radius:100px;transition:background .18s,color .18s;white-space:nowrap}
+.pillnav button:hover{color:#fff}
+.pillnav button.on{background:#fff;color:#141625;font-weight:600}
+.top-actions{display:flex;gap:10px;margin-left:18px;align-items:center}
+.btn{border:0;border-radius:100px;padding:9px 20px;font-size:14px;font-weight:600;white-space:nowrap;transition:transform .15s,box-shadow .15s,background .15s,border-color .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(154,116,34,.35)}
+.btn-primary:hover{background:var(--accent-strong)}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.btn-dark{background:var(--ink);color:var(--bg)}
+[data-theme="dark"] .btn-dark{background:#e9ebf4;color:#141625}
+.btn-dark:hover{filter:brightness(1.12)}
+.btn-line{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.btn-line:hover{border-color:var(--accent)}
+.theme-btn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#f4d488;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .2s}
+.theme-btn:hover{background:rgba(255,255,255,.18);transform:rotate(15deg)}
+
+.wrap{max-width:1240px;margin:0 auto;padding:28px 28px 80px}
+
+/* ===== 录入页 ===== */
+.pagehead{margin:18px 0 22px}
+.pagehead .kick{font-family:var(--mono);font-size:11.5px;letter-spacing:.28em;color:var(--accent);margin-bottom:6px}
+.pagehead h1{font-size:27px;font-weight:800;letter-spacing:.01em}
+.pagehead p{color:var(--mut);font-size:13.5px;margin-top:6px;max-width:860px}
+.quicknav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.quicknav button{border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:100px;padding:5px 14px;font-size:12.5px;transition:border-color .15s,color .15s}
+.quicknav button:hover{border-color:var(--accent);color:var(--accent)}
+.scenbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.scenbar .scen-title{font-size:13px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.scenbar .scen-title::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.scenbar select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13.5px;font-family:var(--sans);background:var(--paper);color:var(--ink);min-width:200px;max-width:320px}
+.scenbar .sp{flex:1}
+.scenbar .btn{padding:7px 16px;font-size:13px}
+.scenbar .scen-hint{font-size:12px;color:var(--mut);width:100%}
+.fsec{background:var(--paper);border:1px solid var(--line);border-radius:16px;margin-bottom:18px;overflow:hidden;transition:border-color .2s,box-shadow .2s;scroll-margin-top:80px}
+.fsec:hover{border-color:#d5d0c4;box-shadow:0 4px 18px rgba(20,22,37,.05)}
+[data-theme="dark"] .fsec:hover{border-color:#3a4056}
+.fsec>h2{font-size:15px;font-weight:700;padding:14px 20px;border-bottom:1px solid var(--line2);display:flex;align-items:baseline;gap:10px}
+.fsec>h2 .idx{font-family:var(--mono);color:var(--accent);font-size:13px}
+.fsec>h2 .hint{font-weight:400;color:var(--mut);font-size:12px;margin-left:auto}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 20px;padding:18px 20px}
+.fld label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:600}
+.fld label .u{color:var(--mut);font-weight:400}
+.fld input,.fld select{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:14px;font-family:var(--mono);background:var(--paper);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.fld select{font-family:var(--sans)}
+.fld input:hover,.fld select:hover{border-color:#c9c5ba}
+.fld input:focus,.fld select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(154,116,34,.12)}
+.fld.txt input{font-family:var(--sans)}
+table.eng{width:calc(100% - 40px);margin:0 20px 6px;border-collapse:collapse;font-size:13.5px}
+table.eng th{font-size:12px;color:var(--mut);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.eng th:first-child,table.eng td:first-child{text-align:left}
+table.eng td{padding:4px 8px;border-bottom:1px solid var(--line2);text-align:right}
+table.eng input{width:100%;border:1px solid transparent;border-radius:7px;padding:6px 8px;font-size:13.5px;font-family:var(--mono);text-align:right;background:transparent;color:var(--ink)}
+table.eng input:hover{border-color:var(--line)}
+table.eng input:focus{border-color:var(--accent);background:var(--paper)}
+table.eng td input.nm{font-family:var(--sans);text-align:left}
+.engfoot{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 18px;gap:12px;flex-wrap:wrap}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:13.5px;font-weight:600;padding:6px 4px}
+.linkbtn:hover{text-decoration:underline}
+.delrow{border:0;background:none;color:var(--mut);font-size:16px;line-height:1;padding:4px 8px;border-radius:6px}
+.delrow:hover{color:var(--bad);background:var(--bad-bg)}
+.formbar{position:sticky;bottom:18px;margin-top:26px;display:flex;gap:12px;justify-content:center;z-index:40}
+.formbar .bar{background:var(--navbg);border-radius:100px;padding:8px;display:flex;gap:8px;box-shadow:0 8px 30px rgba(10,12,20,.32)}
+.savenote{text-align:center;color:var(--mut);font-size:12px;margin-top:14px}
+</style>
+<style>
+/* ===== 报告页（固定白纸文档样式，便于打印/导出，深浅主题一致） ===== */
+.rp-tools{display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap}
+.report{--ink:#141625;--ink2:#3c4152;--mut:#71778a;--line:#e4e2dc;--line2:#efece5;--accent:#9a7422;--accent-bg:#f6efdd;--ok:#157347;--ok-bg:#e4f2ea;--bad:#b02a37;--bad-bg:#fbe9eb;
+  background:#fff;color:#141625;border:1px solid var(--line);border-radius:16px;padding:50px 56px;box-shadow:0 6px 30px rgba(20,22,37,.08)}
+.rp-cover{text-align:center;padding:26px 0 34px;border-bottom:3px solid #141625;margin-bottom:30px}
+.rp-cover .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.3em;color:#9a7422}
+.rp-cover h1{font-family:var(--serif);font-size:31px;font-weight:800;margin:14px 0 8px}
+.rp-cover .meta{color:#71778a;font-size:13.5px;margin-top:10px}
+.rp-cover .meta b{color:#3c4152}
+.verdict{display:flex;gap:14px;margin:0 0 30px;flex-wrap:wrap}
+.vcard{flex:1;min-width:172px;border:1px solid #e4e2dc;border-top:3px solid #157347;border-radius:12px;padding:16px 18px}
+.vcard.bad-top{border-top-color:#b02a37}
+.vcard .t{font-size:12.5px;color:#71778a;font-weight:600}
+.vcard .v{font-family:var(--mono);font-size:24px;font-weight:700;margin:6px 0 4px}
+.vcard .v.neg{color:#b02a37}
+.vcard .s{font-size:12.5px;font-weight:700;display:inline-block;border-radius:100px;padding:2px 12px}
+.vcard .s.ok{background:#e4f2ea;color:#157347}
+.vcard .s.bad{background:#fbe9eb;color:#b02a37}
+.vcard .base{font-size:11.5px;color:#71778a;font-family:var(--mono);margin-top:4px}
+.rp-h2{font-family:var(--serif);font-size:20px;font-weight:800;margin:40px 0 6px;padding-left:13px;border-left:5px solid #141625;color:#141625}
+.rp-h3{font-size:15.5px;font-weight:700;margin:26px 0 8px;color:#3c4152}
+.rp-note{font-size:12.5px;color:#71778a;margin:4px 0 10px}
+.rp-p{font-size:14px;margin:8px 0;color:#3c4152}
+.concl{border:1px solid #e4e2dc;border-left:5px solid #9a7422;background:#f6efdd;border-radius:0 10px 10px 0;padding:16px 20px;font-size:14px;margin-top:14px;color:#141625}
+.concl.ok{border-left-color:#157347;background:#e4f2ea}
+.concl.bad{border-left-color:#b02a37;background:#fbe9eb}
+.concl b{font-size:15px}
+.rtable{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 4px}
+.rtable caption{text-align:left;font-weight:700;font-size:13.5px;padding:6px 0;color:#141625}
+.rtable th,.rtable td{border:1px solid #e4e2dc;padding:6px 9px;text-align:right;font-family:var(--mono);font-weight:400;white-space:nowrap}
+.rtable th{background:#f3f1ec;font-weight:600;font-family:var(--sans);text-align:center}
+.rtable td.l,.rtable th.l{text-align:left;font-family:var(--sans)}
+.rtable tr.hl td{background:#f7f5ef;font-weight:700}
+.rtable td.pos{color:#157347}
+.rtable td.neg{color:#b02a37}
+.badge{display:inline-block;border-radius:100px;font-size:11.5px;font-weight:700;padding:1px 10px;font-family:var(--sans)}
+.badge.ok{background:#e4f2ea;color:#157347}
+.badge.bad{background:#fbe9eb;color:#b02a37}
+.tscroll{overflow-x:auto;padding-bottom:4px}
+.chart{width:100%;height:340px;margin:8px 0 4px}
+.chart-tall{height:400px}
+.rp-foot{margin-top:44px;padding-top:16px;border-top:1px solid #e4e2dc;color:#71778a;font-size:12px;display:flex;justify-content:space-between;font-family:var(--mono)}
+.rp-toc{border:1px solid #e4e2dc;border-radius:12px;padding:18px 24px 14px;margin:0 0 30px;background:#fbfaf7}
+.rp-toc h3{font-family:var(--serif);font-size:17px;font-weight:800;margin:0 0 10px;color:#141625;letter-spacing:.08em}
+.rp-toc ol{list-style:none;counter-reset:toc;columns:2;column-gap:36px;margin:0;padding:0}
+.rp-toc li{counter-increment:toc;break-inside:avoid;padding:4px 0;border-bottom:1px dashed #e9e4d8;font-size:12.5px}
+.rp-toc li::before{content:counter(toc,decimal-leading-zero);font-family:var(--mono);color:#9a7422;margin-right:10px;font-size:11px}
+.rp-toc a{color:#3c4152;text-decoration:none}
+.rp-toc a:hover{color:#9a7422;text-decoration:underline}
+.rp-sec{scroll-margin-top:84px}
+.figcap{text-align:center;font-size:12px;color:#71778a;margin:2px 0 16px;font-family:var(--sans)}
+.badge.info{background:#eef0f8;color:#3c4152}
+/* ---- 分节分析提示 ---- */
+.insight{margin:10px 0 16px;border:1px solid #e4e2dc;border-radius:10px;background:#fbfaf7;padding:10px 14px}
+.insight-item{display:flex;gap:12px;padding:6px 0;border-bottom:1px dashed #e9e4d8;font-size:12.5px;line-height:1.8}
+.insight-item:last-child{border-bottom:0}
+.insight-item b{flex:0 0 104px;color:#141625}
+.insight-item.key b{color:#2f4bd7}
+.insight-item.watch b{color:#b02a37}
+.insight-item.info b{color:#71778a}
+.insight-item span{color:#3c4152}
+@media print{.insight{page-break-inside:avoid}}
+/* ===== Phase 2：交互式敏感性 / 课堂练习 ===== */
+.sens-lab{border:1px solid #e4e2dc;border-radius:14px;padding:16px 20px 12px;margin:14px 0 18px;background:#fbfaf7}
+.sens-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.sens-head b{font-size:14.5px;color:#141625}
+.sens-head span{font-size:12px;color:#71778a}
+.sens-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:start}
+.sens-controls label{display:block;font-size:12.5px;color:#3c4152;font-weight:600;margin-bottom:10px}
+.sens-controls input[type=range]{width:100%;accent-color:#9a7422;margin-top:4px}
+.sens-controls output{float:right;font-family:var(--mono);color:#9a7422;font-weight:700}
+.sens-readout{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sens-readout div{background:#fff;border:1px solid #e9e6dd;border-radius:10px;padding:8px 10px}
+.sens-readout span{display:block;font-size:11.5px;color:#71778a}
+.sens-readout b{font-family:var(--mono);font-size:16px;font-weight:700;color:#141625}
+.sens-readout b.neg{color:#b02a37}.sens-readout b.pos{color:#157347}
+.sens-note{font-size:12px;color:#71778a;margin:8px 0 0;line-height:1.7}
+.chart-sm{height:260px;margin-top:6px}
+.quiz-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:18px}
+.quiz-score{margin-left:auto;font-family:var(--mono);font-weight:700;color:var(--accent);font-size:14px}
+.quiz-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:var(--shadow-s)}
+.quiz-q{font-weight:700;font-size:14.5px;margin-bottom:10px;line-height:1.7}
+.quiz-q .no{font-family:var(--mono);color:var(--accent);margin-right:8px}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quiz-option{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:13.5px;cursor:pointer;transition:border-color .15s,background .15s}
+.quiz-option:hover{border-color:var(--accent)}
+.quiz-option input{margin-top:3px}
+.quiz-option.correct{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:600}
+.quiz-option.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.quiz-explain{margin-top:10px;padding:10px 12px;background:var(--accent-bg);border-radius:8px;font-size:12.5px;color:var(--ink2);line-height:1.8}
+.cmp-radar{margin-top:16px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:8px}
+.cmp-radar .chart{height:420px}
+@media(max-width:700px){.sens-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.quiz-opts{grid-template-columns:1fr}}
+@media print{.sens-lab{display:none!important}}
+
+/* ===== 方案对比页 ===== */
+.cmp-bar{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.cmp-bar select{border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13.5px;background:var(--paper);color:var(--ink);min-width:220px}
+.cmp-bar .vs{font-family:var(--mono);color:var(--accent);font-weight:700}
+.cmp-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.cmp-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.cmp-card h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.cmp-card .sub2{font-size:12px;color:var(--mut);font-family:var(--mono)}
+.cmp-card .big{font-family:var(--mono);font-size:22px;font-weight:700;margin-top:8px}
+.cmp-card .ok{color:var(--ok)}.cmp-card .bad{color:var(--bad)}
+.cmp-table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:8px 14px 14px;overflow-x:auto}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line2);padding:8px 10px;text-align:right;font-family:var(--mono)}
+table.cmp th{font-family:var(--sans);color:var(--mut);font-size:12.5px;border-bottom:1px solid var(--line)}
+table.cmp td.l,table.cmp th.l{text-align:left;font-family:var(--sans)}
+table.cmp td.win{background:var(--ok-bg);color:var(--ok);font-weight:700;border-radius:6px}
+table.cmp td.lose{color:var(--mut)}
+table.cmp tr:hover td{background:rgba(154,116,34,.05)}
+.cmp-charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.cmp-charts .cbox{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px}
+@media(max-width:900px){.cmp-cards,.cmp-charts{grid-template-columns:1fr}}
+
+.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);background:var(--navbg);color:#fff;border-radius:100px;padding:10px 24px;font-size:13.5px;opacity:0;pointer-events:none;transition:all .25s;z-index:99}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== 打印/PDF ===== */
+@media print{
+  body{background:#fff;font-size:12px}
+  .topbar,.rp-tools,.formbar,.savenote,.toast,.scenbar,.quicknav,#page-input,#page-compare,#page-quiz{display:none!important}
+  .wrap{max-width:none;padding:0;margin:0}
+  .report{border:0;border-radius:0;padding:0;box-shadow:none}
+  .rp-h2{page-break-after:avoid}
+  .rtable{page-break-inside:auto;font-size:10.5px}
+  .rtable tr{page-break-inside:avoid}
+  .vcard,.concl,.chart{page-break-inside:avoid}
+  .chart{height:300px}
+  .rp-head{page-break-after:always}
+  .rp-toc{page-break-after:always}
+  .figcap{page-break-after:avoid}
+  @page{size:A4;margin:14mm 12mm}
+}
+@media(max-width:1280px){.topbar .sub{display:none}}
+@media(max-width:900px){.report{padding:26px 18px}}
+@media(max-width:760px){
+  .topbar{padding:10px 14px;gap:10px;height:auto;flex-wrap:wrap}
+  .topbar .sub{display:none}
+  .pillnav{margin-left:0;order:3;width:100%}
+  .pillnav button{flex:1}
+  .wrap{padding:18px 14px 60px}
+  .rp-cover h1{font-size:22px}
+}
+</style>
+<style>
+/* ============================================================
+   视觉增强层 v3 —— 氛围背景 / 玻璃拟态 / 衬线大标题 / 报告排版补齐
+   ============================================================ */
+:root{
+  --shadow-s:0 2px 10px rgba(20,22,37,.05);
+  --shadow-m:0 8px 28px rgba(20,22,37,.09);
+  --shadow-l:0 18px 50px rgba(20,22,37,.14);
+  --gold-grad:linear-gradient(120deg,#e3c470 0%,#b0882e 55%,#8a651c 100%);
+  --r-lg:18px;
+}
+[data-theme="dark"]{
+  --shadow-s:0 2px 10px rgba(0,0,0,.3);
+  --shadow-m:0 8px 28px rgba(0,0,0,.42);
+  --shadow-l:0 18px 50px rgba(0,0,0,.55);
+  --gold-grad:linear-gradient(120deg,#f0d48a 0%,#d9b45c 55%,#a8842f 100%);
+}
+::selection{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--mut) 45%,transparent);border-radius:8px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--mut)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---- 氛围背景：金色极光 + 细网格 ---- */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(720px 460px at 88% -8%,rgba(217,180,92,.16),transparent 62%),
+    radial-gradient(620px 520px at -12% 30%,rgba(47,75,215,.07),transparent 60%),
+    radial-gradient(540px 420px at 55% 112%,rgba(217,180,92,.10),transparent 62%);
+}
+[data-theme="dark"] body::before{
+  background:
+    radial-gradient(820px 520px at 85% -10%,rgba(217,180,92,.13),transparent 62%),
+    radial-gradient(700px 600px at -15% 28%,rgba(88,116,255,.12),transparent 60%),
+    radial-gradient(640px 500px at 60% 115%,rgba(217,180,92,.09),transparent 62%);
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(color-mix(in srgb,var(--mut) 26%,transparent) 1px,transparent 1px);
+  background-size:26px 26px;
+  mask-image:linear-gradient(180deg,#000 0%,transparent 320px);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 320px);
+}
+
+/* ---- 顶栏：深色玻璃拟态 ---- */
+.topbar{
+  background:color-mix(in srgb,var(--navbg) 78%,transparent);
+  backdrop-filter:blur(16px) saturate(1.5);
+  -webkit-backdrop-filter:blur(16px) saturate(1.5);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 4px 24px rgba(10,12,20,.28);
+}
+.topbar .logo{
+  background:linear-gradient(120deg,#fff 30%,#e3c470);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:.03em;
+}
+.topbar .logo svg{filter:drop-shadow(0 0 8px rgba(217,180,92,.6))}
+.pillnav{background:rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.pillnav button{transition:all .22s}
+.pillnav button.on{
+  background:linear-gradient(120deg,#f4e4b8,#e3c470);color:#4a3a12;
+  box-shadow:0 3px 12px rgba(217,180,92,.4);
+}
+.btn-primary{
+  background:var(--gold-grad);color:#fff;
+  box-shadow:0 4px 16px rgba(176,136,46,.42),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.btn-primary:hover{filter:brightness(1.07);box-shadow:0 6px 22px rgba(176,136,46,.55);transform:translateY(-1px)}
+.btn-dark{box-shadow:var(--shadow-s)}
+.btn-dark:hover{transform:translateY(-1px);box-shadow:var(--shadow-m)}
+.btn-line:hover{box-shadow:var(--shadow-s);transform:translateY(-1px)}
+.btn-ghost{border:1px solid rgba(255,255,255,.16)}
+.theme-btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+
+/* ---- 页头：衬线大标题 ---- */
+.pagehead{margin:30px 0 26px;position:relative}
+.pagehead .kick{display:inline-flex;align-items:center;gap:10px;font-size:11px}
+.pagehead .kick::before{content:'';width:34px;height:1.5px;background:var(--accent)}
+.pagehead h1{
+  font-family:var(--serif);font-size:38px;font-weight:800;line-height:1.25;letter-spacing:.01em;
+  background:linear-gradient(115deg,var(--ink) 55%,var(--accent) 105%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.pagehead p{font-size:13px;line-height:1.9}
+
+/* ---- 快速导航：吸顶玻璃条 ---- */
+.quicknav{
+  position:sticky;top:74px;z-index:30;padding:8px;margin:0 -8px 18px;
+  background:color-mix(in srgb,var(--bg) 72%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:14px;
+}
+.quicknav button{transition:all .18s}
+.quicknav button:hover{transform:translateY(-1px);box-shadow:var(--shadow-s)}
+
+/* ---- 方案条 ---- */
+.scenbar{border-radius:var(--r-lg);box-shadow:var(--shadow-s);border-top:2px solid var(--accent)}
+.scenbar .scen-title::before{background:var(--gold-grad);border-radius:3px;width:9px;height:9px}
+
+/* ---- 表单卡片 ---- */
+.fsec{border-radius:var(--r-lg);box-shadow:var(--shadow-s);border:1px solid var(--line)}
+.fsec:hover{transform:none;box-shadow:var(--shadow-m)}
+.fsec>h2{padding:16px 22px;font-size:15.5px;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 55%,var(--accent-bg)),var(--paper))}
+.fsec>h2 .idx{
+  display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;
+  padding:0 6px;border-radius:8px;background:var(--gold-grad);color:#fff !important;
+  font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(176,136,46,.35);
+  -webkit-text-fill-color:#fff;
+}
+.fld label{font-size:12px;letter-spacing:.02em}
+.fld input,.fld select{border-radius:10px;transition:border-color .15s,box-shadow .2s,transform .1s}
+.fld input:focus,.fld select:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent);border-color:var(--accent)}
+table.eng th{border-bottom-width:2px}
+table.eng input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+
+/* ---- 悬浮操作条：玻璃深色胶囊 ---- */
+.formbar .bar{
+  background:color-mix(in srgb,var(--navbg) 82%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 14px 44px rgba(10,12,20,.4);
+}
+
+/* ---- 报告页：封面抬头 / 结论卡片 / 指标条（补齐缺失样式 + 美化） ---- */
+.report{border-radius:22px;box-shadow:var(--shadow-l);padding:56px 62px}
+.rp-head{text-align:center;padding:14px 0 30px;border-bottom:3px double #141625;margin-bottom:30px}
+.rp-head .rp-tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.34em;color:#9a7422;margin-bottom:12px}
+.rp-head h1{font-family:var(--serif);font-size:32px;font-weight:800;letter-spacing:.02em;margin:6px 0 12px;color:#141625}
+.rp-head .rp-meta{color:#71778a;font-size:12.5px;margin-top:5px}
+.rp-head .rp-meta span{margin:0 10px;color:#d5d0c4}
+.rp-sec{margin-top:38px}
+.rp-sec>h3{
+  font-family:var(--serif);font-size:19px;font-weight:800;color:#141625;
+  padding-left:14px;border-left:5px solid #9a7422;margin:0 0 12px;line-height:1.4;
+  letter-spacing:.02em;
+}
+.vcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:18px 0 26px}
+.vcard{background:#fff;transition:transform .18s,box-shadow .18s;position:relative}
+.vcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(20,22,37,.12)}
+.vcard .vk{font-size:12px;color:#71778a;font-weight:600;letter-spacing:.02em}
+.vcard .vv{font-family:var(--mono);font-size:25px;font-weight:700;margin:8px 0 6px;color:#141625;font-variant-numeric:tabular-nums}
+.vcard .vv.bad{color:#b02a37}
+.vcard .vb{font-size:11.5px;color:#71778a;border-top:1px dashed #e4e2dc;padding-top:7px;margin-top:2px}
+.klist{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+.kitem{
+  background:#f8f7f3;border:1px solid #e9e6dd;border-radius:12px;padding:9px 16px;
+  display:flex;flex-direction:column;gap:2px;min-width:170px;flex:1;
+}
+.kitem span{font-size:11.5px;color:#71778a}
+.kitem b{font-family:var(--mono);font-size:16.5px;font-weight:700;color:#141625;font-variant-numeric:tabular-nums}
+.concl{border-radius:12px;box-shadow:var(--shadow-s)}
+.concl h4{font-size:15.5px;margin-bottom:8px;letter-spacing:.02em}
+.concl p{line-height:2;font-size:13.5px}
+.concl .std{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(20,22,37,.18);font-size:12px;color:#71778a;font-family:var(--mono)}
+.rp-foot{justify-content:center;text-align:center;letter-spacing:.04em}
+
+/* ---- 表格精修 ---- */
+.rtable{border-radius:10px;overflow:hidden}
+.rtable thead th{position:sticky;top:0;background:#f3f1ec;z-index:1}
+.rtable tbody tr:hover td{background:#faf8f2}
+.rtable tr.hl td{background:#f4efdf}
+
+/* ---- 对比页精修 ---- */
+.cmp-bar{border-radius:var(--r-lg);box-shadow:var(--shadow-s);border-top:2px solid var(--accent)}
+.cmp-bar .vs{font-size:15px;padding:2px 10px;border-radius:8px;background:var(--accent-bg)}
+.cmp-cards{gap:18px}
+.cmp-card{border-radius:var(--r-lg);box-shadow:var(--shadow-s);position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
+.cmp-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-m)}
+.cmp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold-grad)}
+.cmp-card .t{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--accent);margin-bottom:6px}
+.cmp-card .n{font-size:16px;font-weight:800;margin-bottom:6px;line-height:1.4}
+.cmp-card .m{font-size:12.5px;color:var(--mut)}
+table.cmp td.win{box-shadow:inset 0 0 0 1.5px var(--ok)}
+.cmp-charts .cbox{transition:box-shadow .18s}
+.cmp-charts .cbox:hover{box-shadow:var(--shadow-m)}
+table.cmp caption{text-align:left;font-weight:700;font-size:13.5px;padding:10px 0 2px;color:var(--ink)}
+table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper));border-radius:6px}
+
+/* ---- 提示浮层 ---- */
+.toast{
+  background:color-mix(in srgb,var(--navbg) 88%,transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 12px 36px rgba(10,12,20,.4);font-weight:500;
+}
+
+/* ---- 计算过程附录 ---- */
+.calc{border:1px solid #e4e2dc;border-radius:12px;padding:14px 20px;margin:12px 0;background:#fbfaf7}
+.calc h4{font-size:14px;font-weight:800;margin-bottom:8px;color:#141625}
+.calc h4 .no{font-family:var(--mono);color:#9a7422;margin-right:8px}
+.calc .fx{display:flex;gap:16px;padding:5px 0;border-bottom:1px dashed #e9e4d8;font-size:12.5px;align-items:baseline}
+.calc .fx:last-child{border-bottom:0}
+.calc .fx.tot{background:#f4efdf;margin:2px -10px;padding:5px 10px;border-radius:6px}
+.calc .ft{flex:0 0 250px;color:#3c4152;font-weight:600}
+.calc .fm{font-family:var(--mono);color:#3c4152;flex:1;font-size:12px;word-break:break-all}
+.calc .fm b{color:#141625;font-size:12.5px}
+.calc .fx.tot .fm b{color:#9a7422;font-size:13px}
+.calc .note{font-size:11.5px;color:#71778a;margin-top:8px;line-height:1.7}
+
+@media print{ body::before,body::after{display:none!important} .calc{page-break-inside:avoid} }
+@media(max-width:900px){.pagehead h1{font-size:28px}.report{padding:30px 20px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="1" y="1" width="24" height="24" rx="6" stroke="#fff" stroke-width="2"/><path d="M7 17V9M13 17V6M19 17v-6" stroke="#d9b45c" stroke-width="2.6" stroke-linecap="round"/></svg>
+    投资项目财务评估系统
+  </div>
+  <span class="sub">PROJECT&nbsp;FINANCIAL&nbsp;EVALUATION</span>
+  <nav class="pillnav">
+    <button id="tabInput" class="on" type="button">参数录入</button>
+    <button id="tabReport" type="button">评估报告</button>
+    <button id="tabCompare" type="button">方案对比</button>
+    <button id="tabQuiz" type="button">课堂练习</button>
+  </nav>
+  <div class="top-actions">
+    <button class="theme-btn" id="btnTheme" type="button" title="切换深色/浅色">☾</button>
+    <button class="btn btn-ghost" id="btnReset" type="button">恢复默认案例</button>
+    <button class="btn btn-primary" id="btnGen" type="button">生成评估报告</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ============ 录入页 ============ -->
+  <section id="page-input">
+    <div class="pagehead">
+      <div class="kick">FINANCIAL EVALUATION</div>
+      <h1>基础数据录入</h1>
+      <p>参照《建设项目经济评价方法与参数》（第三版）报表体系设置参数，计算期（建设期/运营期）、还款方式、计息口径均可自定义。修改参数后点击「生成评估报告」，自动完成全套报表编制、盈利能力 / 清偿能力 / 财务生存能力分析与可行性判断，报告支持导出 PDF / Excel / Word。数据仅保存在您当前浏览器中。</p>
+    </div>
+    <div class="scenbar">
+      <span class="scen-title">方案管理</span>
+      <select id="scenSel"><option value="">（暂无已保存方案）</option></select>
+      <button class="btn btn-line" id="btnScenLoad" type="button">载入方案</button>
+      <button class="btn btn-line" id="btnScenDel" type="button">删除方案</button>
+      <button class="btn btn-line" id="btnLegacy" type="button">载入原表案例</button>
+      <select id="caseSel"><option value="">课程案例…</option></select>
+      <button class="btn btn-line" id="btnCaseLoad" type="button">载入案例</button>
+      <span class="sp"></span>
+      <button class="btn btn-dark" id="btnScenSave" type="button">将当前参数保存为方案</button>
+      <span class="scen-hint">同一项目可保存多个版本（如不同融资结构、不同负荷方案），并可在「方案对比」页两两对比。</span>
+    </div>
+    <div class="quicknav" id="quicknav"></div>
+    <div id="formRoot"></div>
+    <div class="formbar">
+      <div class="bar">
+        <button class="btn btn-ghost" id="btnReset2" type="button">恢复默认案例</button>
+        <button class="btn btn-primary" id="btnGen2" type="button">生成评估报告 →</button>
+      </div>
+    </div>
+    <p class="savenote">输入内容实时暂存于本浏览器 localStorage，清除浏览器数据将丢失</p>
+  </section>
+
+  <!-- ============ 报告页 ============ -->
+  <section id="page-report" hidden>
+    <div class="rp-tools">
+      <button class="btn btn-line" id="btnBack" type="button">← 返回修改参数</button>
+      <button class="btn btn-line" id="btnXls" type="button">导出 Excel 报表</button>
+      <button class="btn btn-line" id="btnDoc" type="button">导出 Word（.docx）</button>
+      <button class="btn btn-line" id="btnHtml" type="button">导出交互式 HTML</button>
+      <button class="btn btn-dark" id="btnPdf" type="button">导出 PDF（打印）</button>
+    </div>
+    <div class="report" id="reportRoot"></div>
+  </section>
+
+  <!-- ============ 对比页 ============ -->
+  <section id="page-compare" hidden>
+    <div class="pagehead">
+      <div class="kick">SCENARIO COMPARISON</div>
+      <h1>方案对比</h1>
+      <p>选择任意两个方案（含当前参数）进行并排对比，更优指标自动高亮。先在「参数录入」页保存方案，再到此处选择。</p>
+    </div>
+    <div class="cmp-bar">
+      <select id="cmpA"></select>
+      <span class="vs">VS</span>
+      <select id="cmpB"></select>
+      <button class="btn btn-primary" id="btnCmp" type="button">开始对比</button>
+    </div>
+    <div id="cmpRoot"></div>
+  </section>
+
+  <!-- ============ 课堂练习页 ============ -->
+  <section id="page-quiz" hidden>
+    <div class="pagehead">
+      <div class="kick">CLASSROOM PRACTICE</div>
+      <h1>工程经济课堂练习</h1>
+      <p>题目根据当前参数实时生成，覆盖 NPV、IRR、回收期、敏感性、盈亏平衡、财务生存能力和报表口径。选择答案后点击「提交答案」查看得分与解析；修改参数后点击「换一组题」重新生成。</p>
+    </div>
+    <div class="quiz-bar">
+      <button class="btn btn-primary" id="btnQuizNew" type="button">换一组题</button>
+      <button class="btn btn-dark" id="btnQuizSubmit" type="button">提交答案</button>
+      <span class="quiz-score" id="quizScore"></span>
+    </div>
+    <div id="quizRoot"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="rules.js?v=20261112"></script>
+<script src="cases.js?v=20261112"></script>
+<script src="policy.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   投资项目财务评估系统 —— 计算引擎（泛化版）
+   依据《建设项目经济评价方法与参数》(第三版) 与《项目财务评估系统.doc》计算过程
+   支持：自定义建设期/运营期年数、等额本金/等额本息、建设期利息全年/半年计息
+   计算口径：current 现行规范 | legacy 原表复现（可在「评价基准」切换）
+   原表模式使用历史税费和现金流约定。
+   现行模式分别计算融资前与融资后现金流，按同一还款计划编制偿债和资金运用，
+   并单列增值税留抵变动。总投资收益率取 EBIT/总投资，正常年取首个达产年。
+===================================================================== */
+
+/* ---------- 默认参数（即配套案例） ---------- */
+const DEFAULTS = {
+  projName:'某新建生产项目', projPlace:'—', projIndustry:'制造业',
+  reportOrg:'—', reportNo:'—', reportDate:'',
+  province:'北京市', location:'urban', industryKey:'manufacturing',
+  caseSource:'', policyProfile:'none',
+  buildYears:2, opYears:4,
+  load:[0.6,0.8,1,1],
+  // 附表1 建设投资
+  instRate:0.10, freightRate:0.05, basicRsv:0.10, priceRsv:0.10,
+  engItems:[
+    {name:'主要项目', qty:2000, price:5000, equip:500},
+    {name:'辅助项目', qty:2000, price:5000, equip:200},
+    {name:'公共工程', qty:1000, price:5000, equip:100},
+    {name:'环境工程', qty:1000, price:5000, equip:50},
+  ],
+  landFee:2000, startupFee:800, patentFee:1000,
+  // 附表4 资金筹措
+  ltRate:0.05, invSplit:[0.5,0.5], loanRatio:[0.5,0.5], repayYears:4,
+  repayMethod:'equalPrincipal',      // equalPrincipal 等额本金 | equalInstallment 等额本息
+  buildIntMode:'half',               // half 当年借款按半年计息(现行规范) | full 全年计息(原表口径)
+  // 附表5/6 折旧摊销
+  depYears:10, salvageRate:0.10, assetRecoveryRatio:1, landDepYears:10, patentAmortYears:4, startupAmortYears:4,
+  // 附表7 成本
+  designQty:100, unitMat:60, unitFuel:3, staff:100, wage:10, repairRate:0.20, otherRate:0.05,
+  // 附表8 收入税金（现行税率：增值税货物13%/建筑9%/服务6%；城建税7%/5%/1%；教育费附加3%+地方教育附加2%）
+  price:140, vatMethod:'general', vatRate:0.13, matVatRate:null, fuelVatRate:null, cityTax:0.07, eduTax:0.05,
+  // 附表2 流动资金周转天数
+  dAr:30, dMat:30, dFuel:30, dWip:20, dFg:20, dCash:30, dAp:60,
+  wcLoanRate:0.04, wcLoanRatio:0.50,
+  // 附表10 利润分配
+  incomeTax:0.25, incomeTaxRates:[], surplusR:0.10, welfareR:0.10,
+  // 计算口径：current 现行规范（融资前剔除建设期利息、资本金现金流计全部利息与流资本金偿还）
+  //           legacy 原表复现（建设期利息计入融资前投资、资本金现金流仅计长期借款利息）
+  caliber:'current',
+  // 评价基准（判断标准）
+  i0:0.10, i0Pre:null, i0Equity:null, ptBase:4.5, pdBase:5.0,
+};
+
+/* ---------- 工具函数 ---------- */
+const clone=o=>JSON.parse(JSON.stringify(o));
+/* 原表案例：复现 2024-(融资后724).xlsx 口径，便于与现行规范口径对照 */
+const LEGACY_CASE=Object.assign(clone(DEFAULTS),{
+  caliber:'legacy', buildIntMode:'full',
+  vatRate:0.17, cityTax:0.04, eduTax:0.02,
+});
+/* 课程案例预设 */
+const CASE_PRESETS={
+  base:{label:'基准案例（现行规范）',data:{}},
+  legacy:{label:'原表案例（2024 Excel）',data:LEGACY_CASE},
+  lowload:{label:'低负荷案例（达产 70%、售价 120）',data:{load:[0.3,0.5,0.7,0.7],price:120}},
+  highdebt:{label:'高负债案例（借款 80%）',data:{loanRatio:[0.8,0.8],wcLoanRatio:0.8}},
+};
+if(typeof PFE_CASES!=='undefined')Object.assign(CASE_PRESETS,PFE_CASES);
+const f2=v=>v==null||!isFinite(v)?'—':(Math.round(v*100)/100).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pc=(v,d=2)=>v==null||!isFinite(v)?'—':(v*100).toFixed(d)+'%';
+const sgn=v=>v<0?'neg':'pos';
+function npv(rate,cfs){let s=0;for(let t=0;t<cfs.length;t++)s+=cfs[t]/Math.pow(1+rate,t);return s;}
+function irr(cfs){
+  const f=r=>npv(r,cfs);
+  let lo=-0.95,hi=10,flo=f(lo),fhi=f(hi);
+  if(!isFinite(flo)||!isFinite(fhi)||flo*fhi>0)return NaN;
+  for(let i=0;i<200;i++){const m=(lo+hi)/2,fm=f(m);if(Math.abs(fm)<1e-10)return m;
+    if(flo*fm<0){hi=m;fhi=fm}else{lo=m;flo=fm}}
+  return (lo+hi)/2;
+}
+/* 回收期: cfs 下标0=建设期第1年; 返回从建设期算起的年数 */
+function payback(cfs,rate=0,legacy=false){
+  let cum=0;
+  for(let t=0;t<cfs.length;t++){
+    const cf=cfs[t]/Math.pow(1+rate,t), prev=cum; cum+=cf;
+    if(cum>=0&&cf>0&&t>0&&(legacy||prev<0))return t-(legacy?0:1)+Math.abs(prev)/cf;
+  }
+  return NaN;
+}
+
+/* ---------- 参数规整：数组长度随建设期/运营期变化 ---------- */
+function resizeArr(arr,len,fill){
+  arr=Array.isArray(arr)?arr.slice(0,len):[];
+  while(arr.length<len)arr.push(typeof fill==='function'?fill(arr.length):fill);
+  return arr;
+}
+function normalizeState(st){
+  st.buildYears=Math.min(10,Math.max(1,Math.round(+st.buildYears)||2));
+  st.opYears=Math.min(30,Math.max(1,Math.round(+st.opYears)||4));
+  st.incomeTaxRates=resizeArr(st.incomeTaxRates,st.opYears,()=>null);
+  st.load=resizeArr(st.load,st.opYears,i=>i===0?0.6:(i===1?0.8:1));
+  st.invSplit=resizeArr(st.invSplit,st.buildYears,()=>0);
+  st.loanRatio=resizeArr(st.loanRatio,st.buildYears,()=>0.5);
+  st.repayYears=Math.min(Math.max(1,Math.round(+st.repayYears)||st.opYears),st.opYears);
+  if(!st.repayMethod)st.repayMethod='equalPrincipal';
+  if(!st.buildIntMode)st.buildIntMode='half';
+  if(!st.caliber)st.caliber='current';
+  if(!st.province)st.province='北京市';
+  if(!st.location)st.location='urban';
+  if(!st.industryKey)st.industryKey='manufacturing';
+  if(typeof PFE_RULES!=='undefined'){
+    if(!PFE_RULES.provinces.some(p=>p.name===st.province))st.province='北京市';
+    if(!PFE_RULES.locationCategories.some(l=>l.key===st.location))st.location='urban';
+    if(!PFE_RULES.industries.some(i=>i.key===st.industryKey))st.industryKey='manufacturing';
+  }
+  return st;
+}
+
+/* ---------- 核心模型 ----------
+   s: 参数; mult: 敏感性扰动 {inv:建设投资系数, opc:经营成本系数, rev:收入系数} */
+function computeModel(s,mult){
+  mult=mult||{};
+  const kI=mult.inv??1, kC=mult.opc??1, kR=mult.rev??1;
+  const nB=s.buildYears, nO=s.opYears, load=s.load;
+  const isCurrent=s.caliber!=='legacy';
+
+  /* 附表1 建设投资估算 */
+  const eng=s.engItems.map(it=>{
+    const build=it.qty*it.price/10000*kI;
+    const equip=it.equip*kI;
+    const inst=equip*(1-s.freightRate)*s.instRate;
+    return {name:it.name,build,equip,inst,total:build+equip+inst};
+  });
+  const gBuild=eng.reduce((a,r)=>a+r.build,0);
+  const gEquip=eng.reduce((a,r)=>a+r.equip,0);
+  const gInst=eng.reduce((a,r)=>a+r.inst,0);
+  const gEng=gBuild+gEquip+gInst;                       // 工程费用
+  const land=s.landFee*kI, startup=s.startupFee*kI, patent=s.patentFee*kI;
+  const gOther=land+startup+patent;                     // 其他费用
+  const rsvBasic=(gEng+gOther)*s.basicRsv;
+  const rsvPrice=gEng*s.priceRsv;
+  const rsv=rsvBasic+rsvPrice;                          // 预备费用
+  const conInv=gEng+gOther+rsv;                         // 建设投资合计
+
+  /* 附表4 投资使用计划与资金筹措（含建设期利息） */
+  const splitSum=s.invSplit.reduce((a,b)=>a+b,0);
+  if(!(splitSum>0)||!s.invSplit.every(v=>Number.isFinite(v)&&v>=0)){
+    throw new RangeError('各年建设投资比例须非负，且合计大于 0');
+  }
+  const invY=s.invSplit.map(x=>conInv*(+x||0)/splitSum);// 各年建设投资(归一化)
+  const loanY=invY.map((v,t)=>v*(+(s.loanRatio[t]??0)||0));   // 各年借款
+  const capBuildY=invY.map((v,t)=>v-loanY[t]);          // 各年资本金(建设投资)
+  const half=s.buildIntMode==='half'?0.5:1;
+  const intBuild=[];
+  for(let t=0;t<nB;t++){
+    let base=loanY[t]*half;                             // 当年借款(全年/半年)
+    for(let k=0;k<t;k++)base+=loanY[k]+intBuild[k];     // 以前年度借款本息累计
+    intBuild.push(base*s.ltRate);
+  }
+  const buildIntTotal=intBuild.reduce((a,b)=>a+b,0);
+  const fundTotalY=invY.map((v,t)=>v+intBuild[t]);      // 资金总额(建设投资+利息)
+
+  /* 附表5 固定资产折旧（平均年限法，逐年） */
+  const fa1Base=gBuild+rsv;
+  const fa1_0=fa1Base+buildIntTotal;                     // 建筑工程(含预备费、建设期利息)
+  const fa2_0=gEquip+gInst;                             // 设备工程(含安装)
+  const fa3_0=land;                                     // 土地征用费
+  const faTotal=fa1_0+fa2_0+fa3_0;
+  const dep1Y=[],dep2Y=[],dep3Y=[],depTotY=[],faNet=[],aiDepY=[];
+  let cumDep=0,cumAiDep=0;
+  for(let y=0;y<nO;y++){
+    const buildingDepFactor=y<s.depYears?(1-s.salvageRate)/s.depYears:0;
+    const d1=fa1_0*buildingDepFactor;
+    const d2=y<s.depYears?fa2_0*(1-s.salvageRate)/s.depYears:0;
+    const d3=y<s.landDepYears?fa3_0/s.landDepYears:0;
+    dep1Y.push(d1);dep2Y.push(d2);dep3Y.push(d3);
+    const d=d1+d2+d3;depTotY.push(d);cumDep+=d;faNet.push(faTotal-cumDep);
+    const aiDep=fa1Base*buildingDepFactor+d2+d3;
+    aiDepY.push(aiDep);cumAiDep+=aiDep;
+  }
+
+  /* 附表6 无形及其他资产摊销 */
+  const amPatent=s.patentAmortYears>0?patent/s.patentAmortYears:0;
+  const amStartup=s.startupAmortYears>0?startup/s.startupAmortYears:0;
+  const amortY=[],iaNet=[];let cumAm=0;
+  for(let y=0;y<nO;y++){
+    const a=(y<s.patentAmortYears?amPatent:0)+(y<s.startupAmortYears?amStartup:0);
+    amortY.push(a);cumAm+=a;iaNet.push(Math.max(0,patent+startup-cumAm));
+  }
+
+  /* 附表7 经营成本（不含折旧摊销利息） */
+  const matY=load.map(l=>s.designQty*s.unitMat*l*kC);
+  const fuelY=load.map(l=>s.designQty*s.unitFuel*l*kC);
+  const wagY=load.map(l=>s.staff*s.wage*l*kC);
+  const operatingCosts=depY=>{
+    const repY=depY.map(dep=>dep*s.repairRate*kC);
+    const othY=load.map((l,y)=>(matY[y]+fuelY[y]+wagY[y]+repY[y])*s.otherRate);
+    const opcY=load.map((l,y)=>matY[y]+fuelY[y]+wagY[y]+repY[y]+othY[y]);
+    return {repY,othY,opcY};
+  };
+  const {repY,othY,opcY}=operatingCosts(depTotY);
+  const aiCosts=isCurrent?operatingCosts(aiDepY):{repY,othY,opcY};
+  const aiOpcY=aiCosts.opcY;
+
+  /* 附表2 流动资金估算（分项详细法） */
+  const tn={ar:360/s.dAr,mat:360/s.dMat,fuel:360/s.dFuel,wip:360/s.dWip,fg:360/s.dFg,cash:360/s.dCash,ap:360/s.dAp};
+  const invMatY=matY.map(v=>v/tn.mat);
+  const invFuelY=fuelY.map(v=>v/tn.fuel);
+  const apY=load.map((l,y)=>(matY[y]+fuelY[y])/tn.ap);                     // 应付账款
+  const changes=values=>values.map((v,y)=>v-(values[y-1]??0));
+  const workingCapital=({opcY,repY,othY})=>{
+    const arY=opcY.map(v=>v/tn.ar);
+    const invWipY=load.map((l,y)=>(matY[y]+fuelY[y]+wagY[y]+repY[y])/tn.wip);
+    const invFgY=opcY.map(v=>v/tn.fg);
+    const invY2=load.map((l,y)=>invMatY[y]+invFuelY[y]+invWipY[y]+invFgY[y]);
+    const cashY=load.map((l,y)=>(wagY[y]+othY[y])/tn.cash);
+    const caY=load.map((l,y)=>arY[y]+invY2[y]+cashY[y]);
+    return {arY,invWipY,invFgY,invY2,cashY,caY,wcY:caY.map((v,y)=>v-apY[y])};
+  };
+  const {arY,invWipY,invFgY,invY2,cashY,caY,wcY}=workingCapital({opcY,repY,othY});
+  const aiWcY=isCurrent?workingCapital(aiCosts).wcY:wcY;
+  const wcIncY=changes(wcY),aiWcIncY=changes(aiWcY);
+  const wcLoanBalY=wcY.map(v=>(isCurrent?Math.max(v,0):v)*s.wcLoanRatio);
+  const wcLoanY=changes(wcLoanBalY);
+  const wcDrawY=wcLoanY.map(v=>isCurrent?Math.max(v,0):v);
+  const wcEarlyRepayY=wcLoanY.map(v=>isCurrent?Math.max(-v,0):0);
+  const wcFinalRepay=isCurrent?wcLoanBalY[nO-1]:0;
+  const wcPrincipalY=wcEarlyRepayY.map((v,y)=>v+(y===nO-1?wcFinalRepay:0));
+  const wcIntY=wcLoanBalY.map(v=>v*s.wcLoanRate);
+
+  /* 附表3 借款还本付息（等额本金 / 等额本息） */
+  const ltP0=loanY.reduce((a,b)=>a+b,0)+buildIntTotal;  // 投产期初借款本息和
+  const nRep=Math.min(Math.max(1,Math.round(s.repayYears)||1),nO);
+  const repayY=[],ltIntY=[],ltBalY=[];let bal=ltP0,annuity=null;
+  if(s.repayMethod==='equalInstallment'&&ltP0>0){
+    const r=s.ltRate;
+    annuity=r>0?ltP0*r*Math.pow(1+r,nRep)/(Math.pow(1+r,nRep)-1):ltP0/nRep;
+    for(let y=0;y<nO;y++){
+      if(y<nRep&&bal>1e-9){
+        const it=bal*r;let pr=annuity-it;if(pr>bal)pr=bal;
+        ltIntY.push(it);repayY.push(pr);bal-=pr;
+      }else{ltIntY.push(0);repayY.push(0);}
+      ltBalY.push(Math.max(bal,0));
+    }
+  }else{
+    const per=ltP0/nRep;
+    for(let y=0;y<nO;y++){
+      if(y<nRep&&bal>1e-9){ltIntY.push(bal*s.ltRate);bal-=per;repayY.push(per);}
+      else{ltIntY.push(0);repayY.push(0);}
+      ltBalY.push(Math.max(bal,0));
+    }
+  }
+  const intTotalY=load.map((l,y)=>ltIntY[y]+wcIntY[y]); // 利息支出合计
+  const debtPrincipalY=repayY.map((v,y)=>v+wcPrincipalY[y]);
+  const debtServiceY=debtPrincipalY.map((v,y)=>v+intTotalY[y]);
+
+  /* 附表7 总成本费用 */
+  const totCostY=load.map((l,y)=>opcY[y]+depTotY[y]+amortY[y]+intTotalY[y]);
+  const fixCostY=load.map((l,y)=>repY[y]*(isCurrent?1+s.otherRate:1)+depTotY[y]+amortY[y]+intTotalY[y]);
+  const varCostY=load.map((l,y)=>totCostY[y]-fixCostY[y]);
+
+  /* 附表8 营业收入、税金及附加 */
+  const grossRevY=load.map(l=>s.designQty*s.price*l*kR);
+  const revY=isCurrent?grossRevY.map(v=>v/(1+s.vatRate)):grossRevY;
+  const outputVatY=revY.map(v=>isCurrent?v*s.vatRate:0);
+  const matVatRate=s.matVatRate??s.vatRate, fuelVatRate=s.fuelVatRate??s.vatRate;
+  const inputVatY=matY.map((v,y)=>isCurrent&&s.vatMethod!=='simple'?v*matVatRate+fuelY[y]*fuelVatRate:0);
+  const vatCreditY=[];
+  const vatY=revY.map((v,y)=>{
+    if(!isCurrent){
+      vatCreditY.push(0);
+      return Math.max(v-matY[y]-fuelY[y],0)*s.vatRate/(1+s.vatRate);
+    }
+    const net=outputVatY[y]-inputVatY[y]-(vatCreditY[y-1]??0);
+    vatCreditY.push(Math.max(-net,0));
+    return Math.max(net,0);
+  });
+  const vatCreditChangeY=changes(vatCreditY);
+  const cityY=vatY.map(v=>v*s.cityTax);
+  const eduY=vatY.map(v=>v*s.eduTax);
+  const taxSurY=vatY.map((v,y)=>(isCurrent?0:v)+cityY[y]+eduY[y]);
+
+  /* 附表10 损益表 */
+  const profitY=load.map((l,y)=>revY[y]-taxSurY[y]-totCostY[y]);
+  const incomeTaxRates=load.map((_,y)=>s.incomeTaxRates?.[y]??s.incomeTax);
+  const incTaxY=profitY.map((v,y)=>Math.max(v,0)*incomeTaxRates[y]);
+  const aiTaxY=isCurrent
+    ?revY.map((v,y)=>Math.max(v-taxSurY[y]-aiOpcY[y]-aiDepY[y]-amortY[y],0)*incomeTaxRates[y])
+    :incTaxY;
+  const netProfitY=load.map((l,y)=>profitY[y]-incTaxY[y]);
+  const surplusY=netProfitY.map(v=>Math.max(v,0)*s.surplusR);
+  const welfareY=netProfitY.map(v=>Math.max(v,0)*s.welfareR);
+  const undistY=load.map((l,y)=>netProfitY[y]-surplusY[y]-welfareY[y]);
+  const cumUndistY=[];undistY.reduce((a,v,y)=>(cumUndistY[y]=a+v,a+v),0);
+
+  /* 现金流量表（时点 0..nB+nO：建设期 0..nB-1，时点 nB 流动资金投入，之后运营期） */
+  const P=nB+nO+1;
+  const bookFA=faNet[nO-1];
+  const recoveryRatio=isCurrent?(s.assetRecoveryRatio??1):1;
+  const salvageFA=bookFA*recoveryRatio;
+  const aiSalvageFA=isCurrent?(fa1Base+fa2_0+fa3_0-cumAiDep)*recoveryRatio:salvageFA;
+  const wcRecover=wcY[nO-1];                            // 回收流动资金
+  const aiWcRecover=aiWcY[nO-1];
+  const capWcY=wcIncY.map((v,y)=>v-wcLoanY[y]);         // 资本金用于流动资金
+  const capWcCashY=wcIncY.map((v,y)=>v-wcDrawY[y]);
+
+  const z=()=>new Array(P).fill(0);
+  const aiIn=z(),aiOut=z(),eqIn=z(),eqOut=z();
+  for(let t=0;t<nB;t++){
+    aiOut[t]+=isCurrent?invY[t]:fundTotalY[t];          // 现行口径融资前不计建设期利息
+    eqOut[t]+=capBuildY[t];
+  }
+  for(let y=0;y<nO;y++){
+    const p=y+nB+1;
+    const isFinal=y===nO-1;
+    aiIn[p]+=revY[y]+(isFinal?aiSalvageFA+aiWcRecover:0);
+    aiOut[p]+=aiOpcY[y]+taxSurY[y]+aiTaxY[y]+vatCreditChangeY[y];
+    aiOut[p-1]+=aiWcIncY[y];                            // 流动资金增额在运营年初投入
+    eqIn[p]+=revY[y]+(isFinal?salvageFA+wcRecover:0);
+    const interest=isCurrent?intTotalY[y]:ltIntY[y];
+    eqOut[p]+=repayY[y]+interest+opcY[y]+taxSurY[y]+incTaxY[y]+vatCreditChangeY[y];
+    eqOut[p-1]+=capWcCashY[y]+wcEarlyRepayY[y];
+  }
+  eqOut[P-1]+=wcFinalRepay;
+  const aiCf=aiIn.map((v,p)=>v-aiOut[p]);
+  const aiCfPre=aiCf.map((v,p)=>v+(p>=nB+1?aiTaxY[p-nB-1]:0));
+  const eqCf=eqIn.map((v,p)=>v-eqOut[p]);
+  const eqCfPre=eqCf.map((v,p)=>v+(p>=nB+1?incTaxY[p-nB-1]:0));
+  const cum=a=>{const r=[];a.reduce((x,v,i)=>(r[i]=x+v,x+v),0);return r;};
+
+  /* 指标 */
+  const i0=s.i0, i0Pre=s.i0Pre??i0, i0Equity=s.i0Equity??i0;
+  const M={
+    eng,gBuild,gEquip,gInst,gEng,land,startup,patent,gOther,rsvBasic,rsvPrice,rsv,conInv,
+    invY,loanY,capBuildY,intBuild,buildIntTotal,fundTotalY,
+    fa1_0,fa2_0,fa3_0,dep1Y,dep2Y,dep3Y,depTotY,faTotal,faNet,amPatent,amStartup,amortY,iaNet,
+    matY,fuelY,wagY,repY,othY,opcY,
+    tn,arY,invMatY,invFuelY,invWipY,invFgY,invY2,cashY,caY,apY,wcY,wcIncY,wcLoanY,wcIntY,
+    wcDrawY,wcEarlyRepayY,wcFinalRepay,wcPrincipalY,debtPrincipalY,debtServiceY,
+    ltP0,repayY,ltIntY,ltBalY,intTotalY,annuity,nRep,
+    totCostY,fixCostY,varCostY,revY,grossRevY,vatY,outputVatY,inputVatY,vatCreditY,vatCreditChangeY,cityY,eduY,taxSurY,
+    profitY,incTaxY,incomeTaxRates,netProfitY,surplusY,welfareY,undistY,cumUndistY,
+    bookFA,salvageFA,wcRecover,capWcY,capWcCashY,aiOpcY,aiTaxY,aiWcIncY,aiWcRecover,aiSalvageFA,
+    aiIn,aiOut,aiCf,aiCfPre,aiCum:cum(aiCf),aiCumPre:cum(aiCfPre),
+    eqIn,eqOut,eqCf,eqCfPre,eqCum:cum(eqCf),eqCumPre:cum(eqCfPre),
+    ind:{
+      ai:{npv:npv(i0,aiCf),npvPre:npv(i0Pre,aiCfPre),irr:irr(aiCf),irrPre:irr(aiCfPre),
+          pt:payback(aiCf,0,!isCurrent),ptPre:payback(aiCfPre,0,!isCurrent),pd:payback(aiCf,i0,!isCurrent),pdPre:payback(aiCfPre,i0Pre,!isCurrent)},
+      eq:{npv:npv(i0Equity,eqCf),npvPre:npv(i0Equity,eqCfPre),irr:irr(eqCf),irrPre:irr(eqCfPre),
+          pt:payback(eqCf,0,!isCurrent),ptPre:payback(eqCfPre,0,!isCurrent),pd:payback(eqCf,i0Equity,!isCurrent),pdPre:payback(eqCfPre,i0Equity,!isCurrent)},
+    },
+  };
+
+  /* 总投资（建设投资+建设期利息+流动资金） */
+  M.totalInv=conInv+buildIntTotal+wcY[nO-1];
+  /* 正常年：现行口径取首个达产年（负荷≥100%），无达产年取负荷最高年；原表口径沿用第3个运营年 */
+  const fullYear=load.findIndex(l=>l>=1-1e-9);
+  const ny=isCurrent
+    ?(fullYear>=0?fullYear:load.indexOf(Math.max(...load)))
+    :(nO>=3?2:nO-1);
+  M.normalY=ny;
+  /* 总投资收益率 ROI＝EBIT/总投资（现行）；原表口径沿用利润总额/总投资 */
+  M.ebitNormal=profitY[ny]+(isCurrent?intTotalY[ny]:0);
+  M.roiPre=M.ebitNormal/M.totalInv;
+  M.roiAfter=netProfitY[ny]/M.totalInv;
+  M.isCurrent=isCurrent;
+  const capTotal=capBuildY.reduce((a,b)=>a+b,0)+capWcY.reduce((a,b)=>a+b,0);
+  M.capTotal=capTotal;
+  M.roeNormal=netProfitY[ny]/capTotal;
+
+  /* 盈亏平衡分析（各运营年） */
+  M.bepContributionY=load.map((l,y)=>{
+    const contribution=revY[y]-taxSurY[y]-varCostY[y];
+    return isCurrent?(l>0?contribution/l:NaN):contribution;
+  });
+  M.bepY=M.bepContributionY.map((v,y)=>v>0?fixCostY[y]/v:NaN);
+  M.bepNormal=M.bepY[ny];
+  M.bepQtyNormal=s.designQty*(isCurrent?1:load[ny])*M.bepNormal;
+  M.bepRevNormal=load[ny]>0?revY[ny]*M.bepNormal/(isCurrent?load[ny]:1):NaN;
+
+  /* 附表9 资金来源与运用表 */
+  const srcY=[],useY=[],surplusY2=[],cumSurplusY=[];let cs=0;
+  for(let y=0;y<nO;y++){
+    const src=profitY[y]+depTotY[y]+amortY[y]+wcDrawY[y]+capWcY[y]+(y===nO-1?salvageFA+wcRecover:0);
+    const use=wcIncY[y]+incTaxY[y]+debtPrincipalY[y]+vatCreditChangeY[y];
+    srcY.push(src);useY.push(use);surplusY2.push(src-use);cs+=src-use;cumSurplusY.push(cs);
+  }
+  M.srcY=srcY;M.useY=useY;M.surplusY2=surplusY2;M.cumSurplusY=cumSurplusY;
+
+  /* 附表12 资产负债表（运营期各年） */
+  M.bs=load.map((l,y)=>{
+    const isFinal=y===nO-1;
+    const closed=isCurrent&&isFinal;
+    const ar=closed?0:arY[y],inv=closed?0:invY2[y],cash=closed?0:cashY[y];
+    const ap=closed?0:apY[y],fa=closed?0:faNet[y];
+    const ca=ar+inv+cash+cumSurplusY[y]+vatCreditY[y];
+    let asset=ca+fa+iaNet[y];
+    if(!isCurrent&&isFinal)asset-=bookFA+wcRecover;     // 原表期末展示口径
+    const wcLoanBal=wcLoanBalY[y]-(isFinal?wcFinalRepay:0);
+    const cl=ap+wcLoanBal;
+    const capCum=capBuildY.reduce((a,b)=>a+b,0)+capWcY.slice(0,y+1).reduce((a,b)=>a+b,0);
+    const eqSurplus=surplusY.slice(0,y+1).reduce((a,b)=>a+b,0);
+    const eqWelfare=welfareY.slice(0,y+1).reduce((a,b)=>a+b,0);
+    const cumUndist=cumUndistY[y]+(y===nO-1?salvageFA-bookFA:0);
+    const equity=capCum+eqSurplus+eqWelfare+cumUndist;
+    const ltBal=ltBalY[y];
+    return {ca,ar,inv,cash,cumS:cumSurplusY[y],
+            faNet:fa,iaNet:iaNet[y],asset,
+            cl,ap,wcLoanBal,ltBal,
+            capCum,eqSurplus,eqWelfare,cumUndist,equity,
+            liabEq:cl+ltBal+equity,
+            debtRatio:(cl+ltBal)/asset, currentRatio:ca/cl, quickRatio:(ca-inv)/cl};
+  });
+  /* 利息备付率 / 偿债备付率 */
+  M.icrY=load.map((l,y)=>intTotalY[y]>0?(profitY[y]+intTotalY[y])/intTotalY[y]:NaN);
+  M.dscrY=load.map((l,y)=>{
+    const due=debtServiceY[y];
+    return due>0?(netProfitY[y]+depTotY[y]+amortY[y]+intTotalY[y])/due:NaN;
+  });
+
+  /* 敏感性分析（±20%，仅基准情形计算） */
+  if(mult.inv==null&&mult.opc==null&&mult.rev==null){
+    const ks=[0.8,0.9,1.0,1.1,1.2];
+    const sens=f=>ks.map(k=>{const m=computeModel(s,f(k));return m.ind.ai.npv;});
+    M.sens={ks,
+      inv:sens(k=>({inv:k})),
+      opc:sens(k=>({opc:k})),
+      rev:sens(k=>({rev:k}))};
+  }
+  return M;
+}
+
+/* ---------- 可行性判断（严格按文档标准） ---------- */
+function judge(s,M){
+  const i0=s.i0,i0Equity=s.i0Equity??i0,ptB=s.ptBase,pdB=s.pdBase;
+  const items=[
+    {key:'npvAi', label:'全部投资净现值 NPV（税后）', val:M.ind.ai.npv, unit:'万元',
+     pass:isFinite(M.ind.ai.npv)&&M.ind.ai.npv>=0, base:'≥ 0', disp:f2(M.ind.ai.npv)},
+    {key:'irrAi', label:'全部投资内部收益率 IRR（税后）', val:M.ind.ai.irr, unit:'',
+     pass:isFinite(M.ind.ai.irr)&&M.ind.ai.irr>=i0, base:'≥ 基准收益率 '+pc(i0,0), disp:pc(M.ind.ai.irr)},
+    {key:'ptAi', label:'全部投资静态回收期（税后）', val:M.ind.ai.pt, unit:'年',
+     pass:isFinite(M.ind.ai.pt)&&M.ind.ai.pt<=ptB, base:'≤ '+ptB+' 年', disp:isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'计算期内未回收'},
+    {key:'pdAi', label:'全部投资动态回收期（税后）', val:M.ind.ai.pd, unit:'年',
+     pass:isFinite(M.ind.ai.pd)&&M.ind.ai.pd<=pdB, base:'≤ '+pdB+' 年', disp:isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'计算期内未回收'},
+    {key:'irrEq', label:'资本金内部收益率 IRR（税后）', val:M.ind.eq.irr, unit:'',
+     pass:isFinite(M.ind.eq.irr)&&M.ind.eq.irr>=i0Equity, base:'≥ 资本金基准收益率 '+pc(i0Equity,2), disp:pc(M.ind.eq.irr)},
+    {key:'npvEq', label:'资本金净现值 NPV（税后）', val:M.ind.eq.npv, unit:'万元',
+     pass:isFinite(M.ind.eq.npv)&&M.ind.eq.npv>=0, base:'≥ 0', disp:f2(M.ind.eq.npv)},
+  ];
+  /* 财务生存能力：各年累计盈余资金均不为负（《方法与参数》第三版） */
+  const minCum=Math.min(...M.cumSurplusY);
+  items.push({key:'fsurv', label:'财务生存能力（累计盈余资金最小值）', val:minCum, unit:'万元',
+    pass:isFinite(minCum)&&minCum>=0, base:'各年累计盈余资金 ≥ 0', disp:f2(minCum)});
+  if(M.isCurrent){
+    for(const [key,label,ratios,dues] of [
+      ['icr','最低利息备付率 ICR',M.icrY,M.intTotalY],
+      ['dscr','最低偿债备付率 DSCR',M.dscrY,M.debtServiceY],
+    ]){
+      const applicable=dues.some(v=>v>0);
+      const val=applicable?Math.min(...ratios.filter((v,y)=>dues[y]>0)):NaN;
+      items.push({key,label,val,unit:'',applicable,pass:applicable?Number.isFinite(val)&&val>=1:null,
+        base:'≥ 1',disp:applicable?f2(val):'不适用'});
+    }
+  }
+  const passAll=items.every(i=>i.pass!==false);
+  return {items,passAll};
+}
+
+/* ---------- 规则库接入（规则数据见 app/rules.js） ---------- */
+const BASIS_DOCS=(typeof PFE_RULES!=='undefined'&&Array.isArray(PFE_RULES.basisDocs))
+  ?PFE_RULES.basisDocs
+  :[
+    {name:'建设项目经济评价方法与参数（第三版）',no:'发改投资〔2006〕1325号',scope:'财务评价方法、报表体系、指标口径',use:'全篇'},
+    {name:'中华人民共和国增值税法',no:'2026年1月1日起施行',scope:'增值税计税方式、适用税率及留抵',use:'附表8'},
+    {name:'中华人民共和国城市维护建设税法',no:'2021年9月1日施行',scope:'城建税 7%/5%/1%',use:'附表8'},
+    {name:'征收教育费附加的暂行规定',no:'国务院令第448号',scope:'教育费附加 3%',use:'附表8'},
+    {name:'关于统一地方教育附加政策有关问题的通知',no:'财综〔2010〕98号',scope:'地方教育附加 2%',use:'附表8'},
+    {name:'中华人民共和国企业所得税法',no:'主席令第63号',scope:'企业所得税',use:'附表10'},
+    {name:'中华人民共和国企业所得税法实施条例',no:'国务院令第512号',scope:'固定资产最低折旧年限',use:'附表5'},
+    {name:'关于加强固定资产投资项目资本金管理的通知',no:'国发〔2019〕26号',scope:'最低资本金比例',use:'资金筹措'},
+  ];
+
+/* ---------- 数据驱动合规检查 ---------- */
+function complianceCheck(s){
+  const R=(typeof PFE_RULES!=='undefined')?PFE_RULES:null;
+  const items=[];
+  const add=(group,key,label,value,basis,status,note)=>items.push({group,key,label,value,basis,status,note});
+  const inSet=(v,arr)=>arr.some(x=>Math.abs(v-x)<1e-9);
+  const ind=R?R.industries.find(i=>i.key===s.industryKey):null;
+  const prov=R?R.provinces.find(p=>p.name===s.province):null;
+  const loc=R?R.locationCategories.find(l=>l.key===s.location):null;
+
+  /* 税费 */
+  const simpleVat=s.caliber!=='legacy'&&s.vatMethod==='simple';
+  const vatOk=inSet(s.vatRate,simpleVat?[0.03]:(R?R.vatAllowed:[0.13,0.09,0.06]));
+  const vatHint=!simpleVat&&ind&&ind.vatRate!=null&&Math.abs(s.vatRate-ind.vatRate)>1e-9;
+  add('tax','vat',simpleVat?'增值税征收率':'增值税税率',pc(s.vatRate,0),'中华人民共和国增值税法',
+    vatOk?(vatHint?'info':'ok'):'warn',
+    simpleVat?'请核对项目是否适用简易计税及对应征收率。':
+      vatOk?(vatHint?`本行业通常适用 ${pc(ind.vatRate,0)}，请按货物/服务拆分核对`:'与现行增值税税率一致'):'请按项目类别核对适用税率（13%/9%/6%）');
+  const cityExpected=loc?loc.cityTax:null;
+  const cityOk=cityExpected!=null?Math.abs(s.cityTax-cityExpected)<1e-9:inSet(s.cityTax,[0.07,0.05,0.01]);
+  add('region','cityTax','城市维护建设税率',pc(s.cityTax,0),'城市维护建设税法（2021-09-01施行）',
+    cityOk?'ok':'warn',cityExpected!=null?`纳税人所在地为${loc.name}，适用 ${pc(cityExpected,0)}`:'请按市区/县镇/其他确定适用档次');
+  const localEdu=prov&&typeof prov.localEduRate==='number'?prov.localEduRate:0.02;
+  const eduExpected=0.03+localEdu;
+  const eduOk=Math.abs(s.eduTax-eduExpected)<1e-9;
+  add('region','eduTax','教育费附加及地方教育附加率',pc(s.eduTax,0),`国务院令第448号；财综〔2010〕98号${prov?'；'+prov.name:''}`,
+    eduOk?'ok':'warn',eduOk?`教育费附加3%+地方教育附加${pc(localEdu,0)}`:`应为 ${pc(eduExpected,0)}（教育费附加3%+地方教育附加${pc(localEdu,0)}）`);
+  const incOk=inSet(s.incomeTax,R?R.incomeTaxAllowed:[0.25,0.20,0.15,0.10]);
+  add('tax','incomeTax','企业所得税率',pc(s.incomeTax,0),'企业所得税法（2018年修正）',
+    incOk?'ok':'warn',incOk?'与法定税率或优惠税率一致':'一般 25%；高新 15%；非居民等按相关规定');
+
+  /* 方法口径 */
+  add('method','buildIntMode','建设期利息计息口径',INT_LBL_CAL(s.buildIntMode),'建设项目经济评价方法与参数（第三版）',
+    s.buildIntMode==='half'?'ok':'warn',s.buildIntMode==='half'?'当年借款按半年计息，符合惯例':'全年计息为原表口径，正式报批建议按半年计息');
+  add('method','caliber','计算口径',s.caliber==='legacy'?'原表复现口径':'现行规范口径','建设项目经济评价方法与参数（第三版）',
+    s.caliber==='legacy'?'warn':'ok',s.caliber==='legacy'?'用于复现原 Excel 案例，不建议作为正式报批依据':'融资前剔除建设期利息；资本金现金流计全部利息与流资本金偿还');
+  const amortOver=s.patentAmortYears>s.opYears||s.startupAmortYears>s.opYears;
+  add('method','amortYears','无形资产及开办费摊销年限',s.patentAmortYears+' / '+s.startupAmortYears+' 年','企业所得税法实施条例',
+    amortOver?'warn':'info',amortOver?'摊销期超过运营期，期末仍有未摊销净值':'摊销期未超过运营期');
+  const loadBad=s.load.some(l=>l<0||l>1.0000001);
+  add('method','load','生产负荷',s.load.map(l=>pc(l,0)).join(' / '),'项目设计生产能力',
+    loadBad?'warn':'info',loadBad?'存在小于0或大于100%的负荷值，请核对':'负荷值在 0–100% 区间');
+  add('method','priceBasis','价格与税额口径',s.caliber==='legacy'?'历史差额折算':'单价含税，收入按不含税列报','增值税价外税核算',
+    'info',s.caliber==='legacy'?'采用原表历史公式。':simpleVat?'按不含税销售额与征收率计算，进项税不抵扣。':'销项税抵扣材料和燃料动力进项税，留抵结转至下一运营年。');
+
+  /* 行业参数 */
+  const minCap=Math.min(...s.loanRatio.map(r=>1-(+r||0)));
+  const minCapReq=ind?ind.minCapital:0.20;
+  const minCapOk=minCap>=minCapReq-1e-9;
+  add('industry','capitalRatio','最低资本金比例',pc(minCap,0),`国发〔2019〕26号${ind?'；'+ind.name+'参考最低 '+pc(minCapReq,0):''}`,
+    minCapOk?'ok':'warn',
+    minCapOk?(ind&&ind.name==='房地产开发'?'已达到参考下限，房地产项目须按具体类别（20%/25%/30%）复核':`不低于${ind?ind.name:'一般项目'}参考下限 ${pc(minCapReq,0)}`):`低于参考下限 ${pc(minCapReq,0)}，请按行业规定复核`);
+  const benchDefault=Math.abs(s.i0-0.10)<1e-9;
+  const range=ind&&ind.i0Range?ind.i0Range:[0.08,0.12];
+  const benchOk=s.i0>=range[0]-1e-9&&s.i0<=range[1]+1e-9;
+  add('industry','benchmark','财务基准收益率',pc(s.i0,2),`方法与参数第三版行业参数（${ind?ind.name:'通用'}参考区间 ${pc(range[0],0)}–${pc(range[1],0)}）`,
+    benchOk?(benchDefault?'warn':'ok'):'warn',
+    benchDefault?'当前为默认值 10%，请按行业或资金成本确认':benchOk?'在行业参考区间内，仍需保留取值依据':'偏离行业参考区间，请复核');
+  const depRange=ind&&ind.depRange?ind.depRange:[5,30];
+  const depOk=s.depYears>=depRange[0]&&s.depYears<=depRange[1];
+  add('industry','depYears','固定资产折旧年限',s.depYears+' 年',`企业所得税法实施条例（国务院令第512号）第六十条${ind?'；'+ind.name+'参考区间 '+depRange[0]+'–'+depRange[1]+' 年':''}`,
+    depOk?'info':'warn',depOk?'请按房屋建筑物/机器设备等资产类别核对最低年限':'折旧年限偏离行业参考区间，请核对');
+
+  /* 地区与费用依据 */
+  const feeRules=R?R.feeRules:[];
+  const pDocs=R&&R.provinceFeeDocs&&R.provinceFeeDocs[s.province]?R.provinceFeeDocs[s.province]:[];
+  const feeCount=feeRules.length+pDocs.length;
+  add('region','feeLibrary','工程建设其他费用依据库',`国家 ${feeRules.length} 项 + 省级 ${pDocs.length} 项`,'国家及省级现行计价依据',
+    feeCount>0?'info':'warn',feeCount>0?'已登记依据条目，具体费率/定额须按项目所在地现行版本取费':'未找到该省份的费用依据，请补充规则库');
+
+  /* 报告要素 */
+  const metaOk=s.reportNo&&s.reportNo!=='—'&&s.reportOrg&&s.reportOrg!=='—';
+  add('report','reportMeta','报告编号与编制单位',(s.reportOrg||'—')+' / '+(s.reportNo||'—'),'报告编制管理要求',
+    metaOk?'ok':'warn',metaOk?'已填写':'正式出具报告前请补充编制单位和报告编号');
+  const count=st=>items.filter(i=>i.status===st).length;
+  return {items,ok:count('ok'),warn:count('warn'),info:count('info'),version:R?R.version:'内置',disclaimer:R?R.disclaimer:'',industry:ind?ind.name:'—',industryKey:ind?ind.key:'',province:s.province||'—',location:loc?loc.name:'—',feeCount};
+}
+function INT_LBL_CAL(m){return m==='half'?'当年借款按半年计息':'当年借款全年计息';}
+</script>
+<script src="analysis.js"></script>
+<script src="insights.js"></script>
+<script>
+'use strict';
+/* ================= 表单 ================= */
+const LS_KEY='pfe_state_v1';
+let state=normalizeState(load());
+function load(){
+  try{const raw=localStorage.getItem(LS_KEY);if(raw){const o=JSON.parse(raw);if(o&&o.engItems)return Object.assign(clone(DEFAULTS),o);}}catch(e){}
+  return clone(DEFAULTS);
+}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+
+const RULE_PROV_OPTS=(typeof PFE_RULES!=='undefined'?PFE_RULES.provinces.map(p=>[p.name,p.name]):[['北京市','北京市']]);
+const RULE_LOC_OPTS=(typeof PFE_RULES!=='undefined'?PFE_RULES.locationCategories.map(l=>[l.key,l.name]):[['urban','市区'],['county','县城/镇'],['other','其他']]);
+const RULE_IND_OPTS=(typeof PFE_RULES!=='undefined'?PFE_RULES.industries.map(i=>[i.key,i.name]):[['manufacturing','制造业']]);
+const SECTIONS=[
+ {title:'项目基本信息',items:[
+   {k:'projName',l:'项目名称',txt:1},{k:'projPlace',l:'建设地点',txt:1},{k:'projIndustry',l:'项目所处行业（展示）',txt:1},
+   {k:'province',l:'项目所在省份',sel:RULE_PROV_OPTS},{k:'location',l:'纳税人所在地',sel:RULE_LOC_OPTS},
+   {k:'industryKey',l:'行业分类（合规规则）',sel:RULE_IND_OPTS},
+   {k:'policyProfile',l:'政策分析案例（人工整理）',sel:[['none','不附加'],['jianyangWater','建阳供水真实案例对照（2026年核查）']]},
+   {k:'reportOrg',l:'编制单位',txt:1},{k:'reportNo',l:'报告编号',txt:1},{k:'reportDate',l:'报告日期',txt:1},
+   {k:'buildYears',l:'建设期',u:'年（1–10，改后回车生效）',int:1},
+   {k:'opYears',l:'运营期',u:'年（1–30，改后回车生效）',int:1}]},
+ {title:'生产负荷（运营期各年）',dyn:'load'},
+ {title:'建设投资（附表 1）',items:[
+   {k:'instRate',l:'安装费率',u:'%',pct:1},{k:'freightRate',l:'设备运杂费率',u:'%',pct:1},
+   {k:'basicRsv',l:'基本预备费率',u:'%',pct:1},{k:'priceRsv',l:'涨价预备费率',u:'%',pct:1},
+   {k:'landFee',l:'土地征用费',u:'万元'},{k:'startupFee',l:'开办费',u:'万元'},{k:'patentFee',l:'专利及技术使用费',u:'万元'}],eng:true},
+ {title:'资金筹措与建设期利息（附表 4、3）',items:[
+   {k:'ltRate',l:'长期借款利率',u:'%',pct:1},
+   {k:'repayMethod',l:'还款方式',sel:[['equalPrincipal','等额本金'],['equalInstallment','等额本息']]},
+   {k:'buildIntMode',l:'建设期利息计息',sel:[['half','当年借款按半年计息（现行规范）'],['full','当年借款全年计息（原表口径）']]},
+   {k:'repayYears',l:'借款偿还年限',u:'年（≤运营期）',int:1}],dyn:'split'},
+ {title:'折旧与摊销（附表 5、6）',items:[
+   {k:'depYears',l:'固定资产折旧年限',u:'年'},{k:'salvageRate',l:'折旧残值率',u:'%',pct:1},
+   {k:'assetRecoveryRatio',l:'期末预计净回收额 / 期末账面净值',u:'%（现行口径，填 0 表示不回收）',pct:1},
+   {k:'landDepYears',l:'土地征用费折旧年限',u:'年'},
+   {k:'patentAmortYears',l:'无形资产摊销年限',u:'年'},{k:'startupAmortYears',l:'开办费摊销年限',u:'年'}]},
+ {title:'经营成本（附表 7）',items:[
+   {k:'designQty',l:'年设计产量',u:'吨'},{k:'unitMat',l:'单位产品原材料成本',u:'万元/吨'},
+   {k:'unitFuel',l:'单位产品燃料动力成本',u:'万元/吨'},
+   {k:'staff',l:'员工核定人数',u:'人'},{k:'wage',l:'人均年工资福利',u:'万元'},
+   {k:'repairRate',l:'修理费率（×当年折旧费）',u:'%',pct:1},{k:'otherRate',l:'其他费用综合费率',u:'%',pct:1}]},
+ {title:'营业收入与税金（附表 8）',items:[
+   {k:'price',l:'产品含税单价',u:'万元/吨'},
+   {k:'vatMethod',l:'增值税计税方式（现行口径）',sel:[['general','一般计税'],['simple','简易计税']]},
+   {k:'vatRate',l:'增值税销项税率 / 简易征收率',u:'%',pct:1},
+   {k:'matVatRate',l:'材料进项抵扣税率',u:'%（一般计税，留空同销项）',pct:1,optional:1},
+   {k:'fuelVatRate',l:'燃料动力进项抵扣税率',u:'%（一般计税，留空同销项）',pct:1,optional:1},
+   {k:'cityTax',l:'城市维护建设税率（市区7/县镇5/其他1）',u:'%',pct:1},{k:'eduTax',l:'教育费附加及地方教育附加率（3+2）',u:'%',pct:1}]},
+ {title:'流动资金（附表 2，周转天数法）',items:[
+   {k:'dAr',l:'应收账款周转天数',u:'天'},{k:'dMat',l:'原材料周转天数',u:'天'},
+   {k:'dFuel',l:'燃料动力周转天数',u:'天'},{k:'dWip',l:'在产品周转天数',u:'天'},
+   {k:'dFg',l:'产成品周转天数',u:'天'},{k:'dCash',l:'现金周转天数',u:'天'},
+   {k:'dAp',l:'应付账款周转天数',u:'天'},
+   {k:'wcLoanRate',l:'流动资金借款利率',u:'%',pct:1},{k:'wcLoanRatio',l:'流动资金借款比例',u:'%',pct:1}]},
+ {title:'利润分配（附表 10）',items:[
+   {k:'incomeTax',l:'所得税率',u:'%',pct:1},{k:'surplusR',l:'盈余公积金比例',u:'%',pct:1},{k:'welfareR',l:'盈余公益金比例',u:'%',pct:1}]},
+ {title:'所得税逐年税率（留空采用统一税率）',dyn:'incomeTaxRates'},
+ {title:'评价基准（判断标准）',items:[
+   {k:'caliber',l:'计算口径',sel:[['current','现行规范口径'],['legacy','原表复现口径']]},
+   {k:'i0',l:'项目投资税后基准收益率',u:'%',pct:1},
+   {k:'i0Pre',l:'项目投资税前基准收益率',u:'%（留空同税后）',pct:1,optional:1},
+   {k:'i0Equity',l:'资本金税后基准收益率',u:'%（留空同项目税后）',pct:1,optional:1},{k:'ptBase',l:'基准静态回收期',u:'年'},{k:'pdBase',l:'基准动态回收期',u:'年'}]},
+];
+
+function modelInputError(s){
+  const percent=value=>Number.isFinite(value)&&value>=0&&value<=1;
+  const missing=SECTIONS.flatMap(section=>section.items||[]).find(
+    field=>!field.sel&&!field.txt&&!field.optional&&(s.caliber!=='legacy'||field.k!=='assetRecoveryRatio')&&!Number.isFinite(s[field.k])
+  );
+  if(missing)return '请填写有效数值：'+missing.l;
+  if(s.load.some(v=>!Number.isFinite(v)||v<0))return '请填写各运营年的非负生产负荷';
+  if(s.engItems.some(item=>['qty','price','equip'].some(k=>!Number.isFinite(item[k])||item[k]<0)))return '请填写工程明细中的非负数值';
+  if(!s.invSplit.every(v=>Number.isFinite(v)&&v>=0)||!s.invSplit.some(v=>v>0))return '各年建设投资比例须非负，且合计大于 0';
+  if(!s.loanRatio.every(percent)||!percent(s.wcLoanRatio))return '借款比例须在 0% 至 100% 之间';
+  if(!Number.isFinite(s.i0)||s.i0<=-1)return '基准收益率必须大于 −100%';
+  if([s.i0Pre,s.i0Equity].some(v=>v!=null&&(!Number.isFinite(v)||v<=-1)))return '税前和资本金基准收益率须大于 −100%';
+  if(!percent(s.incomeTax)||s.incomeTaxRates.some(v=>v!=null&&!percent(v)))return '所得税率须在 0% 至 100% 之间';
+  if(!percent(s.vatRate))return '增值税率须在 0% 至 100% 之间';
+  if(s.caliber!=='legacy'){
+    if(![s.matVatRate,s.fuelVatRate].every(v=>v==null||percent(v)))return '进项抵扣税率须在 0% 至 100% 之间';
+    if(!Number.isFinite(s.assetRecoveryRatio)||s.assetRecoveryRatio<0)return '期末净回收比例须为非负数';
+  }
+  return '';
+}
+function getPath(o,p){return p.split('.').reduce((a,k)=>a[k],o);}
+function setPath(o,p,v){const ks=p.split('.');let t=o;for(let i=0;i<ks.length-1;i++)t=t[ks[i]];t[ks[ks.length-1]]=v;}
+
+function fldHtml(it){
+  const v=getPath(state,it.k);
+  if(it.sel){
+    return `<label>${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
+      <select data-k="${it.k}">${it.sel.map(o=>`<option value="${o[0]}" ${v===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+  }
+  const disp=v==null?'':it.pct?(v*100):v;
+  return `<label>${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
+    <input type="${it.txt?'text':'number'}" step="any" value="${disp}" data-k="${it.k}" data-pct="${it.pct?1:0}" data-int="${it.int?1:0}">`;
+}
+
+function renderForm(){
+  const root=document.getElementById('formRoot');
+  root.innerHTML='';
+  SECTIONS.forEach((sec,si)=>{
+    const el=document.createElement('div');el.className='fsec';el.id='fsec-'+si;
+    el.innerHTML=`<h2><span class="idx">${String(si+1).padStart(2,'0')}</span>${sec.title}${sec.dyn?`<span class="hint">随计算期年数自动生成</span>`:''}</h2>`;
+    const grid=document.createElement('div');grid.className='fgrid';
+    (sec.items||[]).forEach(it=>{
+      const fld=document.createElement('div');fld.className='fld'+(it.txt?' txt':'');
+      fld.innerHTML=fldHtml(it);
+      grid.appendChild(fld);
+    });
+    /* 动态数组字段 */
+    if(sec.dyn==='load'){
+      for(let i=0;i<state.opYears;i++){
+        const fld=document.createElement('div');fld.className='fld';
+        fld.innerHTML=fldHtml({k:'load.'+i,l:'第 '+(state.buildYears+i+1)+' 年负荷（运营期第 '+(i+1)+' 年）',u:'%',pct:1});
+        grid.appendChild(fld);
+      }
+    }
+    if(sec.dyn==='incomeTaxRates'){
+      for(let i=0;i<state.opYears;i++){
+        const fld=document.createElement('div');fld.className='fld';
+        fld.innerHTML=fldHtml({k:'incomeTaxRates.'+i,l:'运营期第 '+(i+1)+' 年所得税率',u:'%（留空采用统一税率）',pct:1});
+        grid.appendChild(fld);
+      }
+    }
+    if(sec.dyn==='split'){
+      for(let i=0;i<state.buildYears;i++){
+        const f1=document.createElement('div');f1.className='fld';
+        f1.innerHTML=fldHtml({k:'invSplit.'+i,l:'第 '+(i+1)+' 年建设投资占比',u:'%（合计自动归一化）',pct:1});
+        grid.appendChild(f1);
+        const f2=document.createElement('div');f2.className='fld';
+        f2.innerHTML=fldHtml({k:'loanRatio.'+i,l:'第 '+(i+1)+' 年借款比例',u:'%',pct:1});
+        grid.appendChild(f2);
+      }
+    }
+    el.appendChild(grid);
+    if(sec.eng){
+      const tbl=document.createElement('table');tbl.className='eng';
+      tbl.innerHTML=`<thead><tr><th>工程或费用名称</th><th>工程量（m²）</th><th>单价（元/m²）</th><th>设备购置费（万元）</th><th></th></tr></thead><tbody></tbody>`;
+      const tb=tbl.querySelector('tbody');
+      state.engItems.forEach((it,i)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td><input class="nm" value="${it.name}" data-ei="${i}" data-f="name"></td>
+          <td><input type="number" step="any" value="${it.qty}" data-ei="${i}" data-f="qty"></td>
+          <td><input type="number" step="any" value="${it.price}" data-ei="${i}" data-f="price"></td>
+          <td><input type="number" step="any" value="${it.equip}" data-ei="${i}" data-f="equip"></td>
+          <td><button class="delrow" data-del="${i}" title="删除该行" ${state.engItems.length<=1?'disabled':''}>×</button></td>`;
+        tb.appendChild(tr);
+      });
+      el.appendChild(tbl);
+      const foot=document.createElement('div');foot.className='engfoot';
+      foot.innerHTML=`<button class="linkbtn" id="btnAddEng" type="button">＋ 增加一项工程</button>
+        <span style="font-size:12px;color:var(--mut)">建筑工程费＝工程量×单价；安装工程费＝设备费×(1−运杂费率)×安装费率</span>`;
+      el.appendChild(foot);
+    }
+    root.appendChild(el);
+  });
+  /* 快速导航 */
+  const qn=document.getElementById('quicknav');
+  qn.innerHTML='';
+  SECTIONS.forEach((sec,si)=>{
+    const b=document.createElement('button');b.type='button';b.textContent=String(si+1).padStart(2,'0')+' '+sec.title.replace(/（.*?）/g,'');
+    b.onclick=()=>document.getElementById('fsec-'+si).scrollIntoView({behavior:'smooth'});
+    qn.appendChild(b);
+  });
+}
+
+/* 表单事件（委托） */
+document.getElementById('formRoot').addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.k){
+    if(t.tagName==='SELECT'){
+      setPath(state,t.dataset.k,t.value);
+      if(t.dataset.k==='industryKey'){const o=t.options[t.selectedIndex];if(o){state.projIndustry=o.textContent;const pi=document.querySelector('#formRoot [data-k="projIndustry"]');if(pi)pi.value=state.projIndustry;}}
+      save();return;
+    }
+    let v=t.dataset.pct==='1'?parseFloat(t.value)/100:parseFloat(t.value);
+    if(t.type==='text'){setPath(state,t.dataset.k,t.value);}
+    else{setPath(state,t.dataset.k,Number.isFinite(v)?v:null);}
+    save();return;}
+  if(t.dataset.ei!==undefined){const it=state.engItems[+t.dataset.ei];
+    if(t.dataset.f==='name')it.name=t.value;else{const v=parseFloat(t.value);it[t.dataset.f]=Number.isFinite(v)?v:null;}
+    save();}
+});
+/* 计算期字段在失焦/回车后规整并重渲染（避免输入过程中表单重建） */
+document.getElementById('formRoot').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset&&['buildYears','opYears','repayYears'].includes(t.dataset.k)){
+    normalizeState(state);save();renderForm();toast('计算期已更新，相关参数已自动适配');
+  }
+});
+document.getElementById('formRoot').addEventListener('click',e=>{
+  if(e.target.id==='btnAddEng'){state.engItems.push({name:'新增工程',qty:1000,price:5000,equip:100});save();renderForm();toast('已添加工程项');}
+  if(e.target.dataset.del!==undefined&&state.engItems.length>1){state.engItems.splice(+e.target.dataset.del,1);save();renderForm();}
+});
+
+/* ================= 方案管理（多项目多版本，localStorage） ================= */
+const SCEN_KEY='pfe_scens_v1';
+function loadScens(){try{const a=JSON.parse(localStorage.getItem(SCEN_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
+function saveScens(a){try{localStorage.setItem(SCEN_KEY,JSON.stringify(a));}catch(e){}}
+function refreshScenSel(){
+  const sel=document.getElementById('scenSel');const scens=loadScens();
+  sel.innerHTML=scens.length
+    ?scens.map((sc,i)=>`<option value="${i}">${sc.name}（${new Date(sc.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}）</option>`).join('')
+    :'<option value="">（暂无已保存方案）</option>';
+}
+document.getElementById('btnScenSave').onclick=()=>{
+  const error=modelInputError(state);
+  if(error){toast(error);return;}
+  const dflt=(state.projName||'未命名项目')+' · '+new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const name=window.prompt('方案名称：',dflt);if(name==null)return;
+  const scens=loadScens();scens.push({name:name.trim()||dflt,ts:Date.now(),data:clone(state)});
+  saveScens(scens);refreshScenSel();
+  document.getElementById('scenSel').value=String(scens.length-1);
+  toast('方案已保存（共 '+scens.length+' 个）');
+};
+document.getElementById('btnScenLoad').onclick=()=>{
+  const i=+document.getElementById('scenSel').value;const scens=loadScens();
+  if(!scens.length||isNaN(i)||!scens[i]){toast('请先选择要载入的方案');return;}
+  state=normalizeState(Object.assign(clone(DEFAULTS),clone(scens[i].data)));
+  save();renderForm();
+  if(!showTab('report'))return;
+  toast('已载入方案：'+scens[i].name);
+};
+document.getElementById('btnScenDel').onclick=()=>{
+  const i=+document.getElementById('scenSel').value;const scens=loadScens();
+  if(!scens.length||isNaN(i)||!scens[i]){toast('请先选择要删除的方案');return;}
+  const nm=scens[i].name;scens.splice(i,1);saveScens(scens);refreshScenSel();
+  toast('已删除方案：'+nm);
+};
+document.getElementById('btnLegacy').onclick=()=>{
+  state=normalizeState(clone(LEGACY_CASE));save();renderForm();showTab('report');
+  toast('已载入原表案例口径（增值税17%、城建税4%、教育附加2%、全年计息）');
+};
+const caseSel=document.getElementById('caseSel');
+caseSel.innerHTML='<option value="">课程案例…</option>'+Object.entries(CASE_PRESETS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+document.getElementById('btnCaseLoad').onclick=()=>{
+  const k=caseSel.value;const p=CASE_PRESETS[k];
+  if(!p){toast('请先选择课程案例');return;}
+  state=normalizeState(Object.assign(clone(DEFAULTS),clone(p.data)));
+  state.caseSource=p.source||'';
+  save();renderForm();showTab('report');
+  toast('已载入课程案例：'+p.label);
+};
+
+/* ================= 主题切换 ================= */
+const THEME_KEY='pfe_theme_v1';
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+  document.getElementById('btnTheme').textContent=t==='dark'?'☀':'☾';
+  try{localStorage.setItem(THEME_KEY,t);}catch(e){}
+}
+document.getElementById('btnTheme').onclick=()=>{
+  applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+};
+try{applyTheme(localStorage.getItem(THEME_KEY)||'light');}catch(e){applyTheme('light');}
+
+/* ================= 页签 ================= */
+const pgI=document.getElementById('page-input'),pgR=document.getElementById('page-report'),pgC=document.getElementById('page-compare'),pgQ=document.getElementById('page-quiz');
+const tabI=document.getElementById('tabInput'),tabR=document.getElementById('tabReport'),tabC=document.getElementById('tabCompare'),tabQ=document.getElementById('tabQuiz');
+let lastM=null;
+let lastReportState=null;
+function showTab(which){
+  if(which==='report'&&!ensureReport())return false;
+  pgI.hidden=which!=='input';pgR.hidden=which!=='report';pgC.hidden=which!=='compare';pgQ.hidden=which!=='quiz';
+  tabI.classList.toggle('on',which==='input');tabR.classList.toggle('on',which==='report');tabC.classList.toggle('on',which==='compare');tabQ.classList.toggle('on',which==='quiz');
+  if(which==='report'){
+    requestAnimationFrame(()=>{renderCharts(lastReportState,lastM);initSensLab(lastReportState,lastM);});
+  }
+  if(which==='compare'){refreshCmpSelects();}
+  if(which==='quiz'){const qr=document.getElementById('quizRoot');if(!qr.dataset.built)buildQuiz();}
+  window.scrollTo({top:0});
+  return true;
+}
+tabI.onclick=()=>showTab('input');
+tabR.onclick=()=>showTab('report');
+tabC.onclick=()=>showTab('compare');
+tabQ.onclick=()=>showTab('quiz');
+document.getElementById('btnBack').onclick=()=>showTab('input');
+document.getElementById('btnPdf').onclick=()=>{if(!ensureReport())return;toast('在打印对话框中选择「另存为 PDF」');setTimeout(()=>window.print(),300);};
+document.getElementById('btnXls').onclick=()=>exportExcel();
+document.getElementById('btnDoc').onclick=()=>exportWord();
+document.getElementById('btnHtml').onclick=()=>exportInteractiveHtml();
+function resetAll(){state=normalizeState(clone(DEFAULTS));save();renderForm();generate();toast('已恢复默认案例数据');}
+document.getElementById('btnReset').onclick=resetAll;
+document.getElementById('btnReset2').onclick=resetAll;
+document.getElementById('btnGen').onclick=()=>showTab('report');
+document.getElementById('btnGen2').onclick=()=>showTab('report');
+
+/* ================= 报表渲染辅助 ================= */
+function thRow(cols,first){return `<tr><th class="l">${first||'项目'}</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;}
+function tr(label,vals,opt){
+  opt=opt||{};
+  const tds=vals.map(v=>{
+    if(v==null)return `<td${opt.hl?' class="hl"':''}></td>`;
+    if(typeof v==='string')return `<td class="${opt.hl?'hl ':''}" style="font-family:var(--sans)">${v}</td>`;
+    return `<td class="${opt.hl?'hl ':''}${sgn(v)}">${f2(v)}</td>`;
+  }).join('');
+  return `<tr${opt.hl?' class="hl"':''}><td class="l">${label}</td>${tds}</tr>`;
+}
+function table(caption,head,rows,note){
+  return `<div class="tscroll"><table class="rtable"><caption>${caption}</caption><thead>${head}</thead><tbody>${rows.join('')}</tbody></table></div>${note?`<p class="rp-note">${note}</p>`:''}`;
+}
+const z0=n=>new Array(n).fill(0);
+const padB=(n,arr)=>[...z0(n),...arr];   // 前补 n 个 0（建设期列）
+const padN=(n,arr)=>[...z0(n),...arr.map(()=>null)]; // 前补 null
+const padNull=n=>new Array(n).fill(null);
+</script>
+<script>
+'use strict';
+/* ================= 报告生成 ================= */
+const REPAY_LBL={equalPrincipal:'等额本金',equalInstallment:'等额本息'};
+const INT_LBL={full:'当年借款全年计息',half:'当年借款按半年计息'};
+const CAL_LBL={current:'现行规范口径',legacy:'原表复现口径'};
+const LOC_LBL={urban:'市区',county:'县城/镇',other:'其他'};
+
+function basisTableHtml(){
+  return `<div class="tscroll"><table class="rtable"><caption>主要编制依据文件</caption>
+    <thead><tr><th class="l">文件名称</th><th class="l">文号/版本</th><th class="l">适用范围</th><th class="l">本报告用途</th></tr></thead>
+    <tbody>${BASIS_DOCS.map(d=>`<tr><td class="l">${d.name}</td><td class="l">${d.no}</td><td class="l">${d.scope}</td><td class="l">${d.use}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function complianceTableHtml(s){
+  const C=complianceCheck(s);
+  const G={tax:'税费',region:'地区与费用',industry:'行业参数',method:'方法口径',report:'报告要素'};
+  const badge={ok:'<span class="badge ok">符合</span>',warn:'<span class="badge bad">关注</span>',info:'<span class="badge info">提示</span>'};
+  return `<p class="rp-note">规则库版本 ${C.version} ｜ 行业：${C.industry} ｜ 省份：${C.province} ｜ 纳税人所在地：${C.location} ｜ 费用依据：${C.feeCount} 项</p>
+    <div class="tscroll"><table class="rtable"><caption>合规检查清单（共 ${C.items.length} 项）</caption>
+    <thead><tr><th class="l">类别</th><th class="l">检查项</th><th class="l">本报告取值</th><th class="l">依据</th><th>结论</th><th class="l">建议/说明</th></tr></thead>
+    <tbody>${C.items.map(it=>`<tr><td class="l">${G[it.group]||'其他'}</td><td class="l">${it.label}</td><td class="l">${it.value}</td><td class="l">${it.basis}</td><td>${badge[it.status]}</td><td class="l">${it.note}</td></tr>`).join('')}</tbody></table></div>
+    <p class="rp-note">符合 ${C.ok} 项、关注 ${C.warn} 项、提示 ${C.info} 项。${C.disclaimer||'本清单为参数级校验，最终合规性以主管部门审批意见为准。'}</p>`;
+}
+function industryTableHtml(s){
+  const R=(typeof PFE_RULES!=='undefined')?PFE_RULES:null;
+  const ind=R?R.industries.find(i=>i.key===s.industryKey):null;
+  if(!ind)return '<p class="rp-note">未加载行业规则库。</p>';
+  const rows=[
+    ['财务基准收益率参考区间',`${pc(ind.i0Range[0],0)}–${pc(ind.i0Range[1],0)}`,'按行业参数附录和资金成本复核'],
+    ['最低资本金比例',pc(ind.minCapital,0),'国发〔2019〕26号及行业规定'],
+    ['增值税参考税率',ind.vatRate!=null?pc(ind.vatRate,0):'—','按货物/服务拆分核对'],
+    ['折旧年限参考区间',`${ind.depRange[0]}–${ind.depRange[1]} 年`,'按房屋建筑物/机器设备类别核对最低年限'],
+  ];
+  return `<div class="tscroll"><table class="rtable"><caption>行业参数参考（${ind.name}）</caption>
+    <thead><tr><th class="l">参数</th><th class="l">参考值/区间</th><th class="l">说明</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td class="l">${r[0]}</td><td class="l">${r[1]}</td><td class="l">${r[2]}</td></tr>`).join('')}</tbody></table></div>
+    <p class="rp-note">${ind.note||''}</p>`;
+}
+function feeTableHtml(s){
+  const R=(typeof PFE_RULES!=='undefined')?PFE_RULES:null;
+  if(!R)return '';
+  const pDocs=(R.provinceFeeDocs&&R.provinceFeeDocs[s.province])||[];
+  const rows=[
+    ...R.feeRules.map(r=>[r.code,r.name,r.base,r.doc,r.status==='active'?'现行':'参考']),
+    ...pDocs.map((r,i)=>['P'+String(i+1).padStart(2,'0'),r.name,'—',r.doc,r.status==='reference'?'参考':'待补充']),
+  ];
+  return `<div class="tscroll"><table class="rtable"><caption>工程建设其他费用依据库（国家 + ${s.province}）</caption>
+    <thead><tr><th class="l">编号</th><th class="l">费用名称</th><th class="l">计算基数</th><th class="l">依据文件</th><th>状态</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td class="l">${r[0]}</td><td class="l">${r[1]}</td><td class="l">${r[2]}</td><td class="l">${r[3]}</td><td>${r[4]}</td></tr>`).join('')}</tbody></table></div>
+    <p class="rp-note">仅登记依据条目，不内置具体费率；取费时按项目所在地现行版本和行业定额计算。</p>`;
+}
+function insightBlock(items){
+  if(!items||!items.length)return '';
+  return `<div class="insight">${items.map(it=>`<div class="insight-item ${it.level}"><b>${it.title}</b><span>${it.text}</span></div>`).join('')}</div>`;
+}
+function analysisSectionHtml(s,M,A){
+  const badge=st=>{
+    const cls=st==='达标'?'ok':(st==='未达标'||st==='关注')?'bad':'info';
+    return `<span class="badge ${cls}">${st}</span>`;
+  };
+  const anFmt=it=>{
+    const n=it.name||'';
+    if(it.unit==='年')return isFinite(it.value)?f2(it.value):'未回收';
+    if(it.unit==='万元'||it.unit==='次')return f2(it.value);
+    if(/IRR|资产负债率|BEP|ROI|ROE|净利率|利润率/.test(n))return pc(it.value,1);
+    if(/ICR|DSCR|流动比率|速动比率/.test(n))return f2(it.value);
+    return f2(it.value);
+  };
+  const trendFmt=(label,v)=>{
+    if(/率/.test(label))return pc(v,1);
+    return f2(v);
+  };
+  const indRows=A.indicators.map(it=>`<tr><td class="l">${it.group}</td><td class="l">${it.name}</td><td>${anFmt(it)}</td><td class="l">${it.benchmark}</td><td>${badge(it.status)}</td><td class="l">${it.method}</td></tr>`);
+  const trendRows=A.trends.map(t=>`<tr><td class="l">${t.label}</td><td>${trendFmt(t.label,t.first)}</td><td>${trendFmt(t.label,t.last)}</td><td>${pc(t.changePct,1)}</td><td>${pc(t.cagr,1)}</td><td>${f2(t.slope)}</td><td>${f2(t.r2)}</td><td class="l">${t.direction}</td></tr>`);
+  const groups=[['investment','建设投资'],['cost','正常年总成本'],['financing','融资'],['assets','资产（正常年）'],['liabilities','负债与权益（正常年）']];
+  const structRows=[];
+  groups.forEach(([k,label])=>A.structures[k].forEach(x=>{
+    structRows.push(`<tr><td class="l">${label}</td><td class="l">${x.name}</td><td>${f2(x.value)}</td><td>${pc(x.share,1)}</td></tr>`);
+  }));
+  const crit=Object.fromEntries(A.sensitivity.critical.map(c=>[c.name,c]));
+  const sensRows=A.sensitivity.ranking.map(f=>{
+    const c=crit[f.name];
+    const cp=c&&c.changePct!=null?pc(c.changePct,1):'范围内未出现';
+    return `<tr><td class="l">${f.name}</td><td>${f2(f.change)}</td><td>${f2(f.perPct)}</td><td>${f2(f.elasticity)}</td><td class="l">${cp}</td></tr>`;
+  });
+  const cls=A.classification.level.includes('可行')&&!A.classification.level.includes('不可行')?'ok':(A.classification.level.includes('不可行')||A.classification.level.includes('不足')?'bad':'');
+  return `
+    <p class="rp-p">本部分采用比率分析、趋势分析、结构分析、敏感性/临界点分析和规则判断，对计算期内数据进行客观分析；不进行外推预测，不使用主观权重评分。</p>
+    <p class="rp-note">分节提示统一结构：结论句 + 数据依据 + 方法/口径 + 关注事项；蓝色为关键结论，红色为关注项，灰色为口径提示。</p>
+    <div class="concl ${cls}"><h4>规则判断：${A.classification.level}</h4><p>${A.classification.reasons.join('；')}</p><div class="std">判断依据：项目税后 IRR≥${pc(s.i0,2)}，资本金税后 IRR≥${pc(s.i0Equity??s.i0,2)}，NPV≥0；回收期≤基准；ICR/DSCR≥1（无债务时不适用）；累计盈余资金各年≥0。</div></div>
+    <div class="rp-h3">（一）核心财务指标</div>
+    ${table('核心财务指标与判断（比率分析 + 规则判断）','<tr><th class="l">类别</th><th class="l">指标</th><th>数值</th><th class="l">基准/参考</th><th>结论</th><th class="l">计算方法</th></tr>',indRows,'“参考”表示行业/经验参考值，不作为强制达标条件。')}
+    <div class="rp-h3">（二）趋势分析</div>
+    ${table('计算期内趋势（线性斜率与拟合优度）','<tr><th class="l">指标</th><th>首年</th><th>末年</th><th>变化率</th><th>CAGR</th><th>年均斜率</th><th>R²</th><th class="l">方向</th></tr>',trendRows,'趋势仅描述计算期内数据。负荷爬坡、折旧和还款安排会影响斜率，不代表未来市场趋势。')}
+    <div class="rp-h3">（三）结构分析</div>
+    ${table('投资、成本、融资、资产与负债结构','<tr><th class="l">结构</th><th class="l">项目</th><th>金额（万元）</th><th>占比</th></tr>',structRows,'金额按对应总量计算；占比合计可能因四舍五入略有差异。')}
+    <div class="rp-h3">（四）敏感性与临界点</div>
+    ${table('敏感性弹性与 NPV=0 临界点','<tr><th class="l">因素</th><th>±20% NPV变动（万元）</th><th>每1%变动（万元）</th><th>敏感度系数</th><th class="l">NPV=0临界点</th></tr>',sensRows,'临界点在因素变动 −70%～+100% 范围内搜索；未出现符号变化时标注“范围内未出现”。')}
+    <div class="chart" id="chTrend"></div><p class="figcap">图 7　营业收入、总成本与净利润趋势（万元）</p>
+    <div class="chart" id="chCostStruct"></div><p class="figcap">图 8　正常年总成本结构</p>
+    <div class="rp-h3">（五）分析结论</div>
+    ${A.conclusions.map(p=>`<p class="rp-p">${p}</p>`).join('')}
+    <div class="rp-h3">（六）分析方法与局限</div>
+    <p class="rp-p">方法：${A.methods.map(m=>`${m.name}（${m.use}）`).join('；')}。</p>
+    <p class="rp-note">局限：${A.limitations.join('')}</p>`;
+}
+
+function generate(){
+  const error=modelInputError(state);
+  if(error){toast(error);return null;}
+  const s=normalizeState(clone(state));
+  const M=computeModel(s);
+  const J=judge(s,M);
+  const A=analyzeModel(s,M,J);
+  M.analysis=A;
+  const INS=buildInsights(s,M,J,A);
+  const nB=s.buildYears,nO=s.opYears,P=nB+nO+1;
+  const yLblOp=i=>'第 '+(nB+i+1)+' 年';
+  const yLblP=t=>'第 '+t+' 年';
+  const opCols=Array.from({length:nO},(_,i)=>yLblOp(i));
+  const pCols=Array.from({length:P},(_,t)=>yLblP(t));
+  const bCols=Array.from({length:nB},(_,i)=>'第 '+(i+1)+' 年');
+  const tot=a=>a.reduce((x,y)=>x+y,0);
+  const cuma=a=>{const r=[];a.reduce((x,v,i)=>(r[i]=x+v,x+v),0);return r;};
+  const dcf=(a,r)=>a.map((v,t)=>v/Math.pow(1+r,t));
+  const cumDep=cuma(M.depTotY);
+  const patentAmY=Array.from({length:nO},(_,y)=>y<s.patentAmortYears?M.amPatent:0);
+  const startupAmY=Array.from({length:nO},(_,y)=>y<s.startupAmortYears?M.amStartup:0);
+  const bsGap=M.bs.map(b=>b.asset-b.liabEq);
+
+  /* ---- P 时点现金流明细行 ---- */
+  const at=(arr,offset)=>{const r=z0(P);for(let y=0;y<nO;y++)r[y+offset]=arr[y];return r;};
+  const revP=at(M.revY,nB+1),opcP=at(M.opcY,nB+1),taxP=at(M.taxSurY,nB+1),incP=at(M.incTaxY,nB+1);
+  const repayP=at(M.repayY,nB+1),ltIntP=at(M.ltIntY,nB+1);
+  const wcIncP=at(M.aiWcIncY,nB),capWcP=at(M.capWcCashY,nB);
+  const aiOpcP=at(M.aiOpcY,nB+1),aiTaxP=at(M.aiTaxY,nB+1),vatCreditP=at(M.vatCreditChangeY,nB+1);
+  const fundP=z0(P).map((_,t)=>t<nB?M.fundTotalY[t]:0);
+  const capBP=z0(P).map((_,t)=>t<nB?M.capBuildY[t]:0);
+  const salvP=z0(P);salvP[P-1]=M.salvageFA;
+  const wcRecP=z0(P);wcRecP[P-1]=M.wcRecover;
+  const phaseP=Array.from({length:P},(_,t)=>t<nB?'建设期':(t===nB?'投产期':'生产期'));
+
+  const R=document.getElementById('reportRoot');
+  const H=[];
+
+  /* ===== 抬头 ===== */
+  H.push(`<div class="rp-head">
+    <div class="rp-tag">建设项目经济评价 · 财务评价专章</div>
+    <h1>${s.projName||'（未命名项目）'}</h1>
+    <div class="rp-meta">建设地点：${s.projPlace||'—'}<span>｜</span>所属行业：${s.projIndustry||'—'}<span>｜</span>所在省份：${s.province||'—'}<span>｜</span>纳税人所在地：${LOC_LBL[s.location]||'—'}</div>
+    <div class="rp-meta">编制单位：${s.reportOrg||'—'}<span>｜</span>报告编号：${s.reportNo||'—'}<span>｜</span>报告日期：${s.reportDate||new Date().toLocaleDateString('zh-CN')}</div>
+    <div class="rp-meta">计算期 ${nB+nO} 年（建设期 ${nB} 年 + 运营期 ${nO} 年）<span>｜</span>还款方式：${REPAY_LBL[s.repayMethod]}<span>｜</span>${INT_LBL[s.buildIntMode]}<span>｜</span>计算口径：${CAL_LBL[s.caliber]}<span>｜</span>基准收益率 ${pc(s.i0,0)}</div>
+  </div>`);
+
+  /* ===== 结论卡片 ===== */
+  H.push(`<div class="rp-sec"><h3>评估结论一览</h3><div class="vcards" id="verdict">${
+    J.items.map(it=>`<div class="vcard${it.pass===false?' bad-top':''}">
+      <div class="vk">${it.label}</div>
+      <div class="vv${it.pass===false?' bad':''}">${it.disp}</div>
+      <div class="vb">判断标准：${it.base} → <b style="color:${it.pass===false?'#b91c1c':it.pass?'#166534':'#71778a'}">${it.pass===null?'不适用':it.pass?'达标':'未达标'}</b></div>
+    </div>`).join('')}</div>`);
+  const nyName='运营期第 '+(M.normalY+1)+' 年（'+yLblOp(M.normalY)+'）';
+  H.push(`<div class="concl ${J.passAll?'':'bad'}">
+    <h4>${J.passAll?'✓ 综合评估结论：项目财务可行':'✕ 综合评估结论：项目财务可行性未完全满足'}</h4>
+    <p>按《建设项目经济评价方法与参数》（第三版）财务评价口径测算：本项目全部投资税后财务净现值 <b>${f2(M.ind.ai.npv)} 万元</b>（要求 ≥ 0），内部收益率 <b>${pc(M.ind.ai.irr)}</b>（要求 ≥ ${pc(s.i0,0)}）；静态投资回收期 <b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'计算期内未回收'}</b>（基准 ≤ ${s.ptBase} 年），动态投资回收期 <b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'计算期内未回收'}</b>（基准 ≤ ${s.pdBase} 年）。资本金税后内部收益率 <b>${pc(M.ind.eq.irr)}</b>、净现值 <b>${f2(M.ind.eq.npv)} 万元</b>。${nyName}${s.caliber==='legacy'?'总投资收益率（税前）':'总投资收益率（EBIT/总投资）'}<b>${pc(M.roiPre)}</b>，盈亏平衡点（生产能力利用率）<b>${pc(M.bepNormal)}</b>。财务生存能力方面，运营期各年累计盈余资金最小值 <b>${f2(Math.min(...M.cumSurplusY))} 万元</b>${Math.min(...M.cumSurplusY)>=0?'，各年均为非负，资金链可持续':'，出现负值，存在资金缺口风险'}。</p>
+    <div class="std">判断依据：NPV ≥ 0；项目税后 IRR ≥ ${pc(s.i0,2)}，资本金税后 IRR ≥ ${pc(s.i0Equity??s.i0,2)}；静态回收期 ≤ ${s.ptBase} 年；动态回收期 ≤ ${s.pdBase} 年；累计盈余资金各年 ≥ 0。</div>
+  </div></div>`);
+
+  /* ===== 编制说明 ===== */
+  H.push(`<div class="rp-sec"><h3>编制说明与主要依据</h3>
+    <div class="rp-h3">（一）编制范围</div>
+    <p class="rp-p">本报告为「${s.projName||'（未命名项目）'}」可行性研究的财务评价专章，依据《建设项目经济评价方法与参数》（第三版）的报表体系和指标口径编制，覆盖投资估算、融资方案、成本费用、营业收入与税金、流动资金、借款还本付息、利润分配、现金流量、资产负债、财务生存能力、盈亏平衡与敏感性分析。市场、技术、节能、环保、社会稳定等专项论证不在本报告范围内。</p>
+    <div class="rp-h3">（二）计算口径与价格体系</div>
+    <p class="rp-p">计算期 ${nB+nO} 年（建设期 ${nB} 年、运营期 ${nO} 年），采用${CAL_LBL[s.caliber]}。${M.isCurrent
+      ?'融资前现金流量独立于融资方案。资本金现金流量计入各年应还本付息。产品单价含税，营业收入按不含税金额列报，详见附表 8。'
+      :'融资前现金流量按原表口径将建设期利息计入建设投资，资本金现金流量仅计长期借款利息，增值税沿用历史差额公式，用于复现 2024 年 Excel 案例。'}建设期利息按「${INT_LBL[s.buildIntMode]}」计算。</p>
+    <div class="rp-h3">（三）主要参数与数据来源</div>
+    <p class="rp-p">项目名称、建设地点、行业、计算期、生产负荷、工程费用、融资结构、折旧摊销年限、成本与价格、周转天数等参数由用户在参数录入页填写；参数录入页显示初始默认值。${s.caliber==='legacy'?'本报告为原表复现口径，默认税率 17%/4%/2% 仅用于与历史案例对照。':'当前增值税销项税率或简易征收率、城建税和教育附加按录入值测算。'}项目税前基准收益率为 ${pc(s.i0Pre??s.i0,2)}，项目税后为 ${pc(s.i0,2)}，资本金税后为 ${pc(s.i0Equity??s.i0,2)}。所得税按各年适用税率计算，亏损按当年零税额处理。基准静态回收期 ${s.ptBase} 年、动态回收期 ${s.pdBase} 年，均可在参数页调整。</p>
+    ${s.caseSource?`<p class="rp-p">案例数据来源：${s.caseSource}</p>`:''}
+    <div class="rp-h3">（四）主要编制依据</div>
+    ${basisTableHtml()}
+    <p class="rp-note">以下为编制参考，适用性和现行效力须逐项复核；本报告附录 B 给出参数级合规检查清单，最终合规性以投资主管部门、财政部门和行业主管部门的审批意见为准。</p>
+  </div>`);
+
+  if(typeof policyReportHtml==='function')H.push(policyReportHtml(s.policyProfile));
+
+  /* ===== 一、建设投资 ===== */
+  H.push(`<div class="rp-sec"><h3>一、建设投资估算（附表 1）</h3>`);
+  H.push(table('附表 1　建设投资估算表（单位：万元）',
+    `<tr><th class="l">工程或费用名称</th><th>建筑工程费</th><th>设备购置费</th><th>安装工程费</th><th>其他费用</th><th>合计</th></tr>`,
+    [
+      ...M.eng.map(e=>tr(e.name,[e.build,e.equip,e.inst,null,e.total])),
+      tr('工程费用小计',[M.gBuild,M.gEquip,M.gInst,null,M.gEng],{hl:true}),
+      tr('土地征用费',[null,null,null,M.land,M.land]),
+      tr('开办费',[null,null,null,M.startup,M.startup]),
+      tr('专利及技术使用费',[null,null,null,M.patent,M.patent]),
+      tr('其他费用小计',[null,null,null,M.gOther,M.gOther],{hl:true}),
+      tr('基本预备费（'+pc(s.basicRsv,0)+'）',[null,null,null,M.rsvBasic,M.rsvBasic]),
+      tr('涨价预备费（'+pc(s.priceRsv,0)+'）',[null,null,null,M.rsvPrice,M.rsvPrice]),
+      tr('预备费用小计',[null,null,null,M.rsv,M.rsv],{hl:true}),
+      tr('建设投资合计',[M.gBuild,M.gEquip,M.gInst,M.gOther+M.rsv,M.conInv],{hl:true}),
+    ],
+    '安装工程费＝设备购置费×(1−运杂费率 '+pc(s.freightRate,0)+')×安装费率 '+pc(s.instRate,0)+'；基本预备费＝(工程费用＋其他费用)×'+pc(s.basicRsv,0)+'；涨价预备费＝工程费用×'+pc(s.priceRsv,0)+'。'));
+  H.push(`<div class="chart" id="chInvest"></div><p class="figcap">图 1　建设投资构成</p>`);
+  H.push(insightBlock(INS.investment));
+  H.push('</div>');
+
+  /* ===== 二、资金筹措 ===== */
+  H.push(`<div class="rp-sec"><h3>二、投资使用计划与资金筹措（附表 4）</h3>`);
+  H.push(table('附表 4　投资使用计划与资金筹措表（单位：万元）',
+    thRow([...bCols,'合计'],'项目'),
+    [
+      tr('一、建设投资',[...M.invY,M.conInv]),
+      tr('二、建设期利息',[...M.intBuild,M.buildIntTotal]),
+      tr('资金总额',[...M.fundTotalY,M.conInv+M.buildIntTotal],{hl:true}),
+      tr('三、资金来源',[...M.fundTotalY,M.conInv+M.buildIntTotal],{hl:true}),
+      tr('　1. 长期借款',[...M.loanY,tot(M.loanY)]),
+      tr('　2. 资本金',[...M.capBuildY,tot(M.capBuildY)]),
+    ],
+    `建设期利息按「${INT_LBL[s.buildIntMode]}」计算，利率 ${pc(s.ltRate,2)}；借款在建设期 ${nB} 年内按 ${M.loanY.map(v=>f2(v)).join(' / ')} 万元投入。`));
+  H.push(`<div class="klist">
+    <div class="kitem"><span>项目总投资</span><b>${f2(M.totalInv)} 万元</b></div>
+    <div class="kitem"><span>其中：建设投资</span><b>${f2(M.conInv)} 万元</b></div>
+    <div class="kitem"><span>建设期利息</span><b>${f2(M.buildIntTotal)} 万元</b></div>
+    <div class="kitem"><span>流动资金（末年）</span><b>${f2(M.wcY[nO-1])} 万元</b></div>
+    <div class="kitem"><span>资本金合计</span><b>${f2(M.capTotal)} 万元</b></div>
+    <div class="kitem"><span>借款合计</span><b>${f2(M.ltP0+M.wcLoanY.reduce((a,b)=>a+b,0))} 万元</b></div>
+  </div>${insightBlock(INS.financing)}</div>`);
+
+  /* ===== 三、折旧摊销 ===== */
+  H.push(`<div class="rp-sec"><h3>三、固定资产折旧与无形资产摊销（附表 5、6）</h3>`);
+  H.push(table('附表 5　固定资产折旧估算表（平均年限法，单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('固定资产原值',[...Array(nO)].map(()=>M.faTotal)),
+      tr('　建筑工程（原值 '+f2(M.fa1_0)+'）',M.dep1Y),
+      tr('　设备工程（原值 '+f2(M.fa2_0)+'）',M.dep2Y),
+      tr('　土地征用费（原值 '+f2(M.fa3_0)+'）',M.dep3Y),
+      tr('折旧费合计',M.depTotY,{hl:true}),
+      tr('累计折旧',cumDep),
+      tr('固定资产净值',M.faNet),
+    ],
+    `房屋设备按 ${s.depYears} 年折旧、残值率 ${pc(s.salvageRate,0)}；土地征用费按 ${s.landDepYears} 年折旧、无残值。折旧年限届满后当年折旧为 0。`));
+  H.push(table('附表 6　无形及其他资产摊销估算表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('无形资产（专利及技术，原值 '+f2(M.patent)+'）摊销',patentAmY),
+      tr('开办费（原值 '+f2(M.startup)+'）摊销',startupAmY),
+      tr('摊销费合计',M.amortY,{hl:true}),
+      tr('无形及其他资产净值',M.iaNet),
+    ],
+    `专利及技术使用费按 ${s.patentAmortYears} 年摊销；开办费按 ${s.startupAmortYears} 年摊销。`));
+  H.push(insightBlock(INS.depreciation));
+  H.push('</div>');
+
+  /* ===== 四、成本 ===== */
+  H.push(`<div class="rp-sec"><h3>四、总成本费用估算（附表 7）</h3>`);
+  H.push(table('附表 7　总成本费用估算表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('生产负荷',s.load.map(l=>pc(l,0))),
+      tr('一、原材料',M.matY),
+      tr('二、燃料及动力',M.fuelY),
+      tr('三、工资及福利费',M.wagY),
+      tr('四、修理费（当年折旧×'+pc(s.repairRate,0)+'）',M.repY),
+      tr('五、其他费用（'+pc(s.otherRate,0)+'）',M.othY),
+      tr('经营成本（一～五）',M.opcY,{hl:true}),
+      tr('六、折旧费',M.depTotY),
+      tr('七、摊销费',M.amortY),
+      tr('八、利息支出',M.intTotalY),
+      tr('总成本费用合计',M.totCostY,{hl:true}),
+      tr('　其中：固定成本',M.fixCostY),
+      tr('　其中：可变成本',M.varCostY),
+    ],
+    '修理费率、其他费用费率以当年折旧费及前述成本为基数，故折旧停止后修理费相应变化；其他费用按（材料＋燃料＋工资＋修理费）×费率计。'));
+  H.push(insightBlock(INS.cost));
+  H.push('</div>');
+
+  /* ===== 五、收入税金 ===== */
+  H.push(`<div class="rp-sec"><h3>五、营业收入、税金及附加（附表 8）</h3>`);
+  H.push(table('附表 8　营业收入、税金及附加估算表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      ...(M.isCurrent?[tr('含税销售额',M.grossRevY)]:[]),
+      tr(M.isCurrent?'营业收入（不含增值税）':'营业收入',M.revY,{hl:true}),
+      ...(M.isCurrent?[
+        tr(s.vatMethod==='simple'?'按征收率计算的增值税':'增值税销项税额',M.outputVatY),
+        ...(s.vatMethod==='simple'?[]:[tr('可抵扣进项税额（材料及燃料动力）',M.inputVatY),tr('期末留抵税额',M.vatCreditY)]),
+      ]:[]),
+      tr('应缴增值税',M.vatY),
+      tr('城市维护建设税（'+pc(s.cityTax,0)+'）',M.cityY),
+      tr('教育费附加（'+pc(s.eduTax,0)+'）',M.eduY),
+      tr('税金及附加合计',M.taxSurY,{hl:true}),
+    ],
+    !M.isCurrent?'原表模式沿用历史差额折算法，税金合计包含增值税。':
+      s.vatMethod==='simple'?'按不含税销售额乘征收率，进项税不抵扣。成本应包含不可抵扣税额。':
+      '收入和经营成本按不含可抵扣增值税的口径测算。销项抵扣材料及燃料动力进项，未抵扣部分结转。现金流单列留抵变动，期末不假设退税。建设投资按净额输入，未模拟其增值税收付时点。'));
+  H.push(insightBlock(INS.revenue));
+  H.push('</div>');
+
+  /* ===== 六、流动资金 ===== */
+  H.push(`<div class="rp-sec"><h3>六、流动资金估算（附表 2，分项详细法）</h3>`);
+  H.push(table('附表 2　流动资金估算表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('一、流动资产',M.caY,{hl:true}),
+      tr('　1. 应收账款',M.arY),
+      tr('　2. 存货',M.invY2),
+      tr('　　原材料',M.invMatY),
+      tr('　　燃料动力',M.invFuelY),
+      tr('　　在产品',M.invWipY),
+      tr('　　产成品',M.invFgY),
+      tr('　3. 现金',M.cashY),
+      tr('二、流动负债（应付账款）',M.apY),
+      tr('三、流动资金（一−二）',M.wcY,{hl:true}),
+      tr('四、流动资金本年增加额',M.wcIncY),
+      tr('五、流动资金借款（'+pc(s.wcLoanRatio,0)+'）',M.wcLoanY),
+      tr('六、流动资金借款利息',M.wcIntY),
+    ],
+    `周转天数：应收账款 ${s.dAr} 天、原材料 ${s.dMat} 天、燃料动力 ${s.dFuel} 天、在产品 ${s.dWip} 天、产成品 ${s.dFg} 天、现金 ${s.dCash} 天、应付账款 ${s.dAp} 天。`));
+  H.push(insightBlock(INS.workingCapital));
+  H.push('</div>');
+
+  /* ===== 七、还本付息 ===== */
+  H.push(`<div class="rp-sec"><h3>七、借款还本付息（附表 3，${REPAY_LBL[s.repayMethod]}）</h3>`);
+  const startBal=[M.ltP0,...M.ltBalY.slice(0,nO-1)];
+  H.push(table('附表 3　借款还本付息计算表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('年初借款本息余额',startBal),
+      tr('本年应计利息（'+pc(s.ltRate,2)+'）',M.ltIntY),
+      tr('本年偿还本金',M.repayY),
+      tr('长期借款还本付息合计',M.repayY.map((v,y)=>v+M.ltIntY[y]),{hl:true}),
+      ...(M.isCurrent?[
+        tr('流动资金借款还本',M.wcPrincipalY),
+        tr('流动资金借款付息',M.wcIntY),
+        tr('全部应还本付息额',M.debtServiceY,{hl:true}),
+      ]:[]),
+      tr('年末借款余额',M.ltBalY),
+      tr('流动资金借款利息',M.wcIntY),
+      tr('利息支出合计',M.intTotalY,{hl:true}),
+    ],
+    (s.repayMethod==='equalInstallment'
+      ?`投产期初借款本息和 ${f2(M.ltP0)} 万元，按等额本息在 ${M.nRep} 年内偿还，每期偿还额 ${f2(M.annuity)} 万元（A＝P·r·(1+r)^n/((1+r)^n−1)）。`
+      :`投产期初借款本息和 ${f2(M.ltP0)} 万元，按等额本金在 ${M.nRep} 年内偿还，每年偿还本金 ${f2(M.ltP0/M.nRep)} 万元，利息按年初余额计。`)+
+    `　流动资金借款按流动资金需求的 ${pc(s.wcLoanRatio,0)}、利率 ${pc(s.wcLoanRate,2)} 计息。`));
+  H.push(insightBlock(INS.repayment));
+  H.push('</div>');
+
+  /* ===== 八、损益 ===== */
+  H.push(`<div class="rp-sec"><h3>八、利润与利润分配（附表 10）</h3>`);
+  H.push(table('附表 10　损益表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('营业收入',M.revY),
+      tr('税金及附加',M.taxSurY),
+      tr('总成本费用',M.totCostY),
+      tr('利润总额',M.profitY,{hl:true}),
+      tr('适用所得税率',M.incomeTaxRates.map(v=>pc(v,2))),
+      tr('所得税',M.incTaxY),
+      tr('税后利润（净利润）',M.netProfitY,{hl:true}),
+      tr('盈余公积金（'+pc(s.surplusR,0)+'）',M.surplusY),
+      tr('公益金（'+pc(s.welfareR,0)+'）',M.welfareY),
+      tr('未分配利润',M.undistY),
+      tr('累计未分配利润',M.cumUndistY),
+    ]));
+  H.push(insightBlock(INS.profit));
+  H.push('</div>');
+  return finishReport(H,{s,M,J,A,INS,nB,nO,P,opCols,pCols,bCols,yLblOp,dcf,cuma,revP,opcP,taxP,incP,repayP,ltIntP,wcIncP,capWcP,fundP,capBP,salvP,wcRecP,phaseP,bsGap,at,aiOpcP,aiTaxP,vatCreditP});
+}
+</script>
+<script>
+'use strict';
+/* ================= 报告生成（后半：现金流 / 资产负债 / 指标） ================= */
+function finishReport(H,ctx){
+  const {s,M,J,A,INS,nB,nO,P,opCols,pCols,yLblOp,dcf,cuma,revP,opcP,taxP,incP,repayP,ltIntP,wcIncP,capWcP,fundP,capBP,salvP,wcRecP,phaseP,bsGap,at,aiOpcP,aiTaxP,vatCreditP}=ctx;
+  const i0=s.i0;
+  const invP=Array.from({length:P},(_,t)=>t<nB?M.invY[t]:0);
+  const wcIntP=Array.from({length:P},(_,t)=>(t>=nB+1&&t-nB-1<nO)?M.wcIntY[t-nB-1]:0);
+  const wcRepayP=at(M.wcEarlyRepayY,nB);
+  wcRepayP[P-1]=M.wcFinalRepay;
+  const aiSalvP=z0(P),aiWcRecP=z0(P);
+  aiSalvP[P-1]=M.aiSalvageFA;
+  aiWcRecP[P-1]=M.aiWcRecover;
+
+  /* ===== 九、全部投资现金流量（附表 11-1） ===== */
+  H.push(`<div class="rp-sec"><h3>九、全部投资现金流量（附表 11-1）</h3>`);
+  const dcfAi=dcf(M.aiCf,i0);
+  H.push(table('附表 11-1　全部投资现金流量表（所得税后，单位：万元）',
+    thRow(pCols,'项目'),
+    [
+      tr('计算期阶段',phaseP),
+      tr('一、现金流入',M.aiIn,{hl:true}),
+      tr('　1. 营业收入',revP),
+      tr('　2. 回收固定资产余值',aiSalvP),
+      tr('　3. 回收流动资金',aiWcRecP),
+      tr('二、现金流出',M.aiOut,{hl:true}),
+      tr(s.caliber==='legacy'?'　1. 建设投资（含建设期利息）':'　1. 建设投资（不含建设期利息）',s.caliber==='legacy'?fundP:invP),
+      tr('　2. 流动资金增加额',wcIncP),
+      tr('　3. 经营成本',aiOpcP),
+      tr('　4. 税金及附加',taxP),
+      tr(M.isCurrent?'　5. 调整所得税':'　5. 所得税',aiTaxP),
+      ...(M.isCurrent?[tr('　6. 增值税留抵变动',vatCreditP)]:[]),
+      tr('三、净现金流量（税后）',M.aiCf,{hl:true}),
+      tr('四、累计净现金流量',M.aiCum),
+      tr('五、折现净现金流量（i₀='+pc(i0,0)+'）',dcfAi),
+      tr('六、累计折现净现金流量',cuma(dcfAi)),
+      tr('七、所得税前净现金流量',M.aiCfPre),
+      tr('八、累计所得税前净现金流量',M.aiCumPre),
+    ],
+    '时点约定：建设投资发生在建设期各年（第 0 年起）；流动资金增额在其需求年度的前一时点投入（即第 '+nB+' 年时点投入第一年流动资金）；运营期现金流量发生在当年年末。'+
+    (s.caliber==='legacy'
+      ?'本表按原表口径将建设期利息计入建设投资。'
+      :'融资前折旧、经营成本、流动资金和资产余值按不含建设期利息的口径计算。调整所得税以融资前息税前利润估算。')));
+  H.push(`<div class="klist">
+    <div class="kitem"><span>财务净现值 NPV（税后）</span><b>${f2(M.ind.ai.npv)} 万元</b></div>
+    <div class="kitem"><span>内部收益率 IRR（税后）</span><b>${pc(M.ind.ai.irr)}</b></div>
+    <div class="kitem"><span>静态回收期（税后，含建设期）</span><b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'未回收'}</b></div>
+    <div class="kitem"><span>动态回收期（税后，含建设期）</span><b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'未回收'}</b></div>
+    <div class="kitem"><span>NPV（税前，基准 ${pc(s.i0Pre??s.i0,2)}）</span><b>${f2(M.ind.ai.npvPre)} 万元</b></div>
+    <div class="kitem"><span>IRR（税前）</span><b>${pc(M.ind.ai.irrPre)}</b></div>
+  </div>`);
+  H.push(`<div class="chart" id="chCash"></div><p class="figcap">图 2　全部投资净现金流量与累计净现金流量（万元）</p>`);
+  H.push(insightBlock(INS.cashflow));
+  H.push('</div>');
+
+  /* ===== 十、资本金现金流量（附表 11-2） ===== */
+  H.push(`<div class="rp-sec"><h3>十、资本金现金流量（附表 11-2）</h3>`);
+  const equityRate=s.i0Equity??i0;
+  const dcfEq=dcf(M.eqCf,equityRate);
+  const eqOutRows=[
+    tr('　1. 项目资本金',capBP.map((v,t)=>v+capWcP[t])),
+    tr('　2. 借款本金偿还',repayP),
+    tr('　3. 借款利息支付（长期）',ltIntP),
+  ];
+  if(s.caliber!=='legacy'){
+    eqOutRows.push(tr('　4. 借款利息支付（流动资金）',wcIntP));
+    eqOutRows.push(tr('　5. 流动资金借款本金偿还',wcRepayP));
+  }
+  const eqNo=s.caliber!=='legacy'?6:4;
+  eqOutRows.push(tr('　'+eqNo+'. 经营成本',opcP));
+  eqOutRows.push(tr('　'+(eqNo+1)+'. 税金及附加',taxP));
+  eqOutRows.push(tr('　'+(eqNo+2)+'. 所得税',incP));
+  if(M.isCurrent)eqOutRows.push(tr('　'+(eqNo+3)+'. 增值税留抵变动',vatCreditP));
+  H.push(table('附表 11-2　资本金现金流量表（所得税后，单位：万元）',
+    thRow(pCols,'项目'),
+    [
+      tr('计算期阶段',phaseP),
+      tr('一、现金流入',M.eqIn,{hl:true}),
+      tr('　1. 营业收入',revP),
+      tr('　2. 回收固定资产余值',salvP),
+      tr('　3. 回收流动资金',wcRecP),
+      tr('二、现金流出',M.eqOut,{hl:true}),
+      ...eqOutRows,
+      tr('三、净现金流量（税后）',M.eqCf,{hl:true}),
+      tr('四、累计净现金流量',M.eqCum),
+      tr('五、折现净现金流量（资本金基准 '+pc(equityRate,2)+'）',dcfEq),
+      tr('六、累计折现净现金流量',cuma(dcfEq)),
+    ],
+    (s.caliber==='legacy'
+      ?'原表口径：现金流出仅含长期借款利息，流动资金借款利息通过所得税前扣除间接反映，期末未计流动资金借款本金偿还。'
+      :'现行口径：现金流出含长期借款本息、流动资金借款利息及期末流动资金借款本金偿还；回收流动资金按全额计入，同时偿还相应借款本金。')));
+  H.push(`<div class="klist">
+    <div class="kitem"><span>资本金 NPV（税后）</span><b>${f2(M.ind.eq.npv)} 万元</b></div>
+    <div class="kitem"><span>资本金 IRR（税后）</span><b>${pc(M.ind.eq.irr)}</b></div>
+    <div class="kitem"><span>资本金静态回收期</span><b>${isFinite(M.ind.eq.pt)?f2(M.ind.eq.pt)+' 年':'未回收'}</b></div>
+    <div class="kitem"><span>资本金动态回收期</span><b>${isFinite(M.ind.eq.pd)?f2(M.ind.eq.pd)+' 年':'未回收'}</b></div>
+  </div>
+  <div class="chart" id="chEqCash"></div><p class="figcap">图 3　资本金净现金流量与累计净现金流量（万元）</p>
+  ${insightBlock(INS.capitalCashflow)}
+  </div>`);
+
+  /* ===== 十一、资金来源与运用（附表 9） ===== */
+  H.push(`<div class="rp-sec"><h3>十一、资金来源与运用（附表 9）</h3>`);
+  const recovRow=Array.from({length:nO},(_,y)=>y===nO-1?M.salvageFA+M.wcRecover:0);
+  H.push(table('附表 9　资金来源与运用表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('一、资金来源合计',M.srcY,{hl:true}),
+      tr('　1. 利润总额',M.profitY),
+      tr('　2. 折旧费',M.depTotY),
+      tr('　3. 摊销费',M.amortY),
+      tr('　4. 流动资金借款',M.wcDrawY),
+      tr('　5. 资本金（用于流动资金）',M.capWcY),
+      tr('　6. 回收固定资产余值及流动资金',recovRow),
+      tr('二、资金运用合计',M.useY,{hl:true}),
+      tr('　1. 流动资金增加额',M.wcIncY),
+      tr('　2. 所得税',M.incTaxY),
+      tr('　3. 借款本金偿还',M.debtPrincipalY),
+      ...(M.isCurrent?[tr('　　其中：流动资金借款还本',M.wcPrincipalY),tr('　4. 增值税留抵变动',M.vatCreditChangeY)]:[]),
+      tr('三、盈余资金（一−二）',M.surplusY2,{hl:true}),
+      tr('四、累计盈余资金',M.cumSurplusY,{hl:true}),
+    ],
+    '盈余资金＝资金来源合计 − 资金运用合计。末年计入回收项和该年应偿还本金。'));
+  H.push(insightBlock(INS.sourceUse));
+  H.push('</div>');
+
+  /* ===== 十二、资产负债（附表 12） ===== */
+  H.push(`<div class="rp-sec"><h3>十二、资产负债表（附表 12）</h3>`);
+  H.push(table('附表 12　资产负债表（运营期各年末，单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('一、资产总计',M.bs.map(b=>b.asset),{hl:true}),
+      tr('　1. 流动资产',M.bs.map(b=>b.ca)),
+      tr('　　应收账款',M.bs.map(b=>b.ar)),
+      tr('　　存货',M.bs.map(b=>b.inv)),
+      tr('　　现金',M.bs.map(b=>b.cash)),
+      tr('　　累计盈余资金',M.bs.map(b=>b.cumS)),
+      ...(M.isCurrent?[tr('　　增值税留抵',M.vatCreditY)]:[]),
+      tr('　2. 固定资产净值',M.bs.map(b=>b.faNet)),
+      tr('　3. 无形及其他资产净值',M.bs.map(b=>b.iaNet)),
+      tr('二、负债及所有者权益总计',M.bs.map(b=>b.liabEq),{hl:true}),
+      tr('　1. 流动负债',M.bs.map(b=>b.cl)),
+      tr('　　应付账款',M.bs.map(b=>b.ap)),
+      tr('　　流动资金借款',M.bs.map(b=>b.wcLoanBal)),
+      tr('　2. 长期借款余额',M.bs.map(b=>b.ltBal)),
+      tr('　3. 所有者权益',M.bs.map(b=>b.equity)),
+      tr('　　资本金',M.bs.map(b=>b.capCum)),
+      tr('　　盈余公积金',M.bs.map(b=>b.eqSurplus)),
+      tr('　　公益金',M.bs.map(b=>b.eqWelfare)),
+      tr('　　累计未分配利润',M.bs.map(b=>b.cumUndist)),
+      tr('资产负债率',M.bs.map(b=>pc(b.debtRatio,1))),
+      tr('流动比率',M.bs.map(b=>isFinite(b.currentRatio)?f2(b.currentRatio):'—')),
+      tr('速动比率',M.bs.map(b=>isFinite(b.quickRatio)?f2(b.quickRatio):'—')),
+    ],
+    '资产负债表配平校验：各年「资产总计−负债及权益总计」差额＝'+bsGap.map(v=>f2(v)).join(' / ')+' 万元（应为 0）；末年资产总计已转出固定资产账面价值与回收的流动资金。'));
+  H.push(insightBlock(INS.balanceSheet));
+  H.push('</div>');
+
+  /* ===== 十三、指标汇总与偿债能力 ===== */
+  H.push(`<div class="rp-sec"><h3>十三、主要评价指标汇总</h3>`);
+  H.push(table('主要经济评价指标汇总表',
+    `<tr><th class="l">指标</th><th>数值</th><th>判断标准</th><th>评价</th></tr>`,
+    [
+      `<tr><td class="l">项目总投资</td><td>${f2(M.totalInv)} 万元</td><td>—</td><td>—</td></tr>`,
+      `<tr><td class="l">全部投资 NPV（税后）</td><td>${f2(M.ind.ai.npv)} 万元</td><td>≥ 0</td><td class="${M.ind.ai.npv>=0?'ok':'bad'}">${M.ind.ai.npv>=0?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">全部投资 IRR（税后）</td><td>${pc(M.ind.ai.irr)}</td><td>≥ ${pc(i0,0)}</td><td class="${M.ind.ai.irr>=i0?'ok':'bad'}">${M.ind.ai.irr>=i0?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">全部投资静态回收期（税后）</td><td>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'未回收'}</td><td>≤ ${s.ptBase} 年</td><td class="${M.ind.ai.pt<=s.ptBase?'ok':'bad'}">${M.ind.ai.pt<=s.ptBase?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">全部投资动态回收期（税后）</td><td>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'未回收'}</td><td>≤ ${s.pdBase} 年</td><td class="${M.ind.ai.pd<=s.pdBase?'ok':'bad'}">${M.ind.ai.pd<=s.pdBase?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">资本金 NPV（税后）</td><td>${f2(M.ind.eq.npv)} 万元</td><td>≥ 0</td><td class="${M.ind.eq.npv>=0?'ok':'bad'}">${M.ind.eq.npv>=0?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">资本金 IRR（税后）</td><td>${pc(M.ind.eq.irr)}</td><td>≥ ${pc(equityRate,2)}</td><td class="${M.ind.eq.irr>=equityRate?'ok':'bad'}">${M.ind.eq.irr>=equityRate?'✓ 达标':'✕ 未达标'}</td></tr>`,
+      `<tr><td class="l">${s.caliber==='legacy'?'总投资收益率（利润总额/总投资，正常年）':'总投资收益率（EBIT/总投资，正常年）'}</td><td>${pc(M.roiPre)}</td><td>—</td><td>—</td></tr>`,
+      `<tr><td class="l">资本金净利润率（正常年）</td><td>${pc(M.roeNormal)}</td><td>—</td><td>—</td></tr>`,
+      `<tr><td class="l">盈亏平衡点（生产能力利用率，正常年）</td><td>${pc(M.bepNormal)}</td><td>—</td><td>—</td></tr>`,
+      `<tr><td class="l">财务生存能力（累计盈余资金最小值）</td><td>${f2(Math.min(...M.cumSurplusY))} 万元</td><td>各年 ≥ 0</td><td class="${Math.min(...M.cumSurplusY)>=0?'ok':'bad'}">${Math.min(...M.cumSurplusY)>=0?'✓ 达标':'✕ 未达标'}</td></tr>`,
+    ]));
+  const fint=a=>a.filter(isFinite);
+  H.push(table('偿债能力指标表',
+    thRow(opCols,'指标'),
+    [
+      tr('利息备付率 ICR',M.icrY.map(v=>isFinite(v)?f2(v):'不适用')),
+      tr('偿债备付率 DSCR',M.dscrY.map(v=>isFinite(v)?f2(v):'不适用')),
+      tr('资产负债率',M.bs.map(b=>pc(b.debtRatio,1))),
+    ],
+    'ICR＝息税前利润/利息支出；DSCR＝(净利润＋折旧＋摊销＋利息)/应还本付息额。借款偿还期内最低 ICR＝'+f2(Math.min(...fint(M.icrY)))+'，最低 DSCR＝'+f2(Math.min(...fint(M.dscrY)))+'。没有应付利息或应还本息的年份，对应指标不适用。'));
+  H.push(`<div class="chart" id="chDebt"></div><p class="figcap">图 4　偿债能力与资产负债率</p>`);
+  H.push(insightBlock(INS.indicators));
+  H.push('</div>');
+
+  /* ===== 十四、盈亏平衡 ===== */
+  H.push(`<div class="rp-sec"><h3>十四、盈亏平衡分析</h3>`);
+  H.push(table('盈亏平衡点计算表（生产能力利用率）',
+    thRow(opCols,'项目'),
+    [
+      tr('固定成本',M.fixCostY),
+      tr(M.isCurrent?'按设计产能折算的贡献额':'营业收入−税金−可变成本',M.bepContributionY),
+      tr('盈亏平衡点 BEP',M.bepY.map(v=>isFinite(v)?pc(v,1):'—'),{hl:true}),
+    ],
+    (M.isCurrent?'按该年单位变动成本和附加线性折算至设计产能，BEP＝固定成本 ÷ 满产贡献额。':'原表按该年收入和成本估算保本比例。')+
+    (isFinite(M.bepNormal)?'正常年（'+yLblOp(M.normalY)+'）BEP＝'+pc(M.bepNormal,1)+'，对应保本产量 '+f2(M.bepQtyNormal)+' 吨、营业收入 '+f2(M.bepRevNormal)+' 万元。':'该年无正贡献额，无法得出保本点。')));
+  H.push(`<div class="chart" id="chBep"></div><p class="figcap">图 5　盈亏平衡分析（正常年）</p>${insightBlock(INS.bep)}</div>`);
+
+  /* ===== 十五、敏感性分析 ===== */
+  H.push(`<div class="rp-sec"><h3>十五、敏感性分析（对全部投资税后 NPV）</h3>`);
+  const sensHead=`<tr><th class="l">不确定因素</th>${M.sens.ks.map(k=>`<th>${k<1?'':'+'}${Math.round((k-1)*100)}%</th>`).join('')}</tr>`;
+  const swings=[
+    {n:'建设投资',v:M.sens.inv},{n:'经营成本',v:M.sens.opc},{n:'营业收入',v:M.sens.rev},
+  ].map(o=>({n:o.n,swing:Math.abs(o.v[0]-o.v[4])})).sort((a,b)=>b.swing-a.swing);
+  H.push(table('敏感性分析表（NPV，单位：万元）',
+    sensHead,
+    [
+      tr('建设投资变动',M.sens.inv),
+      tr('经营成本变动',M.sens.opc),
+      tr('营业收入变动',M.sens.rev),
+    ],
+    '最敏感因素为「'+swings[0].n+'」（NPV 变动幅度 '+f2(swings[0].swing)+' 万元），其次为「'+swings[1].n+'」「'+swings[2].n+'」。NPV<0 的临界情形应重点关注。'));
+  H.push(`<div class="sens-lab" id="sensLab" data-base="${M.ind.ai.npv}" data-base-irr="${M.ind.ai.irr}">
+    <div class="sens-head"><b>交互式敏感性测算</b><span>拖动滑杆（±30%），实时重算全部投资与资本金指标</span></div>
+    <div class="sens-grid">
+      <div class="sens-controls">
+        <label>建设投资 <output id="sensInvV">0%</output><input type="range" id="sensInv" min="-30" max="30" step="1" value="0"></label>
+        <label>经营成本 <output id="sensOpcV">0%</output><input type="range" id="sensOpc" min="-30" max="30" step="1" value="0"></label>
+        <label>营业收入 <output id="sensRevV">0%</output><input type="range" id="sensRev" min="-30" max="30" step="1" value="0"></label>
+        <button class="btn btn-line" id="sensReset" type="button">重置滑杆</button>
+      </div>
+      <div class="sens-readout">
+        <div><span>全部投资 NPV</span><b id="sensNpv">—</b></div>
+        <div><span>全部投资 IRR</span><b id="sensIrr">—</b></div>
+        <div><span>静态回收期</span><b id="sensPt">—</b></div>
+        <div><span>资本金 IRR</span><b id="sensEqIrr">—</b></div>
+      </div>
+    </div>
+    <div class="chart chart-sm" id="chSensLive"></div>
+    <p class="sens-note" id="sensNote"></p>
+  </div>`);
+  H.push(`<div class="chart" id="chSens"></div><p class="figcap">图 6　敏感性分析（对全部投资税后 NPV）</p>${insightBlock(INS.sensitivity)}</div>`);
+
+  /* ===== 十六、财务生存能力 ===== */
+  H.push(`<div class="rp-sec"><h3>十六、财务生存能力分析</h3>`);
+  H.push(table('财务生存能力分析表（单位：万元）',
+    thRow(opCols,'项目'),
+    [
+      tr('各年盈余资金',M.surplusY2),
+      tr('累计盈余资金',M.cumSurplusY,{hl:true}),
+    ],
+    (Math.min(...M.cumSurplusY)>=0
+      ?'运营期各年累计盈余资金均 ≥ 0（最小值 '+f2(Math.min(...M.cumSurplusY))+' 万元），项目在计算期内具备财务生存能力。'
+      :'部分年份累计盈余资金为负（最小值 '+f2(Math.min(...M.cumSurplusY))+' 万元），应通过增加资本金、调整借款结构或压缩流动资金占用等方式弥补资金缺口。')));
+  H.push(insightBlock(INS.survival));
+  H.push('</div>');
+
+  /* ===== 十七、财务指标分析与评价 ===== */
+  H.push(`<div class="rp-sec"><h3>十七、财务指标分析与评价</h3>${analysisSectionHtml(s,M,A)}</div>`);
+
+  /* ===== 十八、结论与建议 ===== */
+  H.push(`<div class="rp-sec"><h3>十八、结论与建议</h3>`);
+  const failKeys=new Set(J.items.filter(i=>i.pass===false).map(i=>i.key));
+  const recs=[];
+  if(failKeys.has('ptAi')||failKeys.has('pdAi'))recs.push('投资回收期未达基准：建议优化建设期与投资节奏、提高早期生产负荷、压缩非生产性投资，或复核基准回收期取值是否符合行业惯例。');
+  if(failKeys.has('npvAi')||failKeys.has('irrAi'))recs.push('全部投资盈利指标未达基准：建议复核产品售价、单位成本、达产负荷与投资规模，必要时调整产品方案或分期建设。');
+  if(failKeys.has('irrEq')||failKeys.has('npvEq'))recs.push('资本金收益未达基准：建议调整资本金比例、借款利率、还款期限或融资结构，降低财务费用。');
+  if(failKeys.has('fsurv'))recs.push('财务生存能力存在缺口：建议补充资本金、压缩流动资金占用、延长借款期限或调整还款计划。');
+  const icrFin=M.icrY.filter(isFinite),dscrFin=M.dscrY.filter(isFinite);
+  if(icrFin.length&&Math.min(...icrFin)<1)recs.push('利息备付率低于 1，存在付息压力：建议提高盈利水平或降低债务规模。');
+  if(dscrFin.length&&Math.min(...dscrFin)<1)recs.push('偿债备付率低于 1，存在还本付息缺口：建议优化还款安排或增加现金来源。');
+  if(!recs.length)recs.push('各项财务指标均达到基准要求。建议在实施阶段重点控制投资超支、成本和售价波动，保持融资结构稳定。');
+  H.push(`<div class="concl ${J.passAll?'ok':'bad'}">
+    <h4>${J.passAll?'✓ 综合结论：项目财务可行':'✕ 综合结论：项目财务可行性未完全满足'}</h4>
+    <p>本报告依据《建设项目经济评价方法与参数》（第三版）测算：全部投资税后 NPV <b>${f2(M.ind.ai.npv)} 万元</b>、IRR <b>${pc(M.ind.ai.irr)}</b>；资本金税后 IRR <b>${pc(M.ind.eq.irr)}</b>；静态/动态回收期分别为 <b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'未回收'}</b> 和 <b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'未回收'}</b>；正常年总投资收益率 <b>${pc(M.roiPre)}</b>，盈亏平衡点 <b>${pc(M.bepNormal)}</b>。${J.passAll?`${J.items.length} 项判断指标全部达标。`:'存在 '+failKeys.size+' 项判断指标未达标，需在决策前重点复核。'}</p>
+    <div class="std">结论仅基于本报告所列参数与口径；参数变化将直接影响结论，使用前请复核。</div>
+  </div>`);
+  H.push(`<div class="rp-h3">建议</div>${recs.map((r,i)=>`<p class="rp-p">${i+1}. ${r}</p>`).join('')}`);
+  H.push(`<div class="rp-h3">主要风险提示</div>
+    <p class="rp-p">① 价格与需求风险：产品售价或销量低于预期将直接压缩利润和现金流，建议开展价格敏感性测算并设置预警线。</p>
+    <p class="rp-p">② 成本与投资风险：原材料、燃料动力价格上涨或建设投资超支会降低 NPV 和 IRR，建议在合同中设置价格调整机制并预留预备费。</p>
+    <p class="rp-p">③ 融资与利率风险：借款利率上升、还款期缩短或资本金不到位会影响偿债能力和财务生存能力，建议锁定融资成本并保持合理资本金比例。</p>
+    <p class="rp-p">④ 负荷与运营风险：达产延迟或负荷不足会显著降低收益，建议制定投产爬坡计划并落实运营保障条件。</p>
+    <p class="rp-p">⑤ 政策与合规风险：税率、费率、补贴和审批政策变化可能影响测算结果，建议在报批前复核附录 B 的合规检查清单。</p>`);
+  H.push('</div>');
+
+  /* ===== 附录A：计算过程详解 ===== */
+  H.push(`<div class="rp-sec"><h3>附录A · 计算过程详解</h3>
+    <p class="rp-note">以下按计算顺序列出全部公式及代入数值（变动成本类以第 1 个运营年为例、评价指标以正常年为例；其余各年算法相同，逐年结果见相应附表）。</p>
+    ${calcAppendix(s,M)}</div>`);
+
+  /* ===== 附录B：合规检查 ===== */
+  H.push(`<div class="rp-sec"><h3>附录B · 合规检查清单</h3>
+    <p class="rp-note">以下为报告生成时的参数级合规校验，按所选行业、省份和纳税人所在地自动匹配规则库，覆盖税率、计息口径、资本金比例、折旧摊销、基准收益率、费用依据和报告要素。检查结果分为「符合」「关注」「提示」三级；「关注」项应在正式报批前核实或补充说明。</p>
+    ${complianceTableHtml(s)}</div>`);
+
+  /* ===== 附录C：主要依据 ===== */
+  H.push(`<div class="rp-sec"><h3>附录C · 主要依据文件</h3>
+    ${basisTableHtml()}
+    ${industryTableHtml(s)}
+    ${feeTableHtml(s)}
+    <p class="rp-note">以上依据文件以现行有效版本为准。地方性费率、定额和补贴政策应在项目所在地主管部门网站复核。</p></div>`);
+
+  H.push(`<div class="rp-foot">本报告由「投资项目财务评估系统」自动生成 · 报表体系参照《建设项目经济评价方法与参数（第三版）》 · ${new Date().toLocaleString('zh-CN')}</div>`);
+
+  const R=document.getElementById('reportRoot');
+  R.innerHTML=H.join('');
+  /* 目录与锚点 */
+  const secs=[...R.querySelectorAll('.rp-sec')];
+  secs.forEach((sec,i)=>{sec.id='sec-'+(i+1);});
+  if(secs.length){
+    const toc=`<nav class="rp-toc"><h3>目录</h3><ol>${secs.map((sec,i)=>`<li><a href="#sec-${i+1}">${sec.querySelector('h3')?.textContent||''}</a></li>`).join('')}</ol></nav>`;
+    secs[0].insertAdjacentHTML('beforebegin',toc);
+  }
+  pgR.dataset.built='1';
+  lastM=M;
+  lastReportState=s;
+  requestAnimationFrame(()=>{renderCharts(s,M);initSensLab(s,M);});
+  return M;
+}
+
+/* ================= 图表 ================= */
+const CH_INK='#141625',CH_MUT='#7b7f95',CH_GRID='#e6e7f0',CH_ACC='#2f4bd7',CH_ACC2='#c9a86a',CH_GOOD='#166534';
+let _charts=[];
+function _mk(id){
+  const el=document.getElementById(id);
+  if(!el||typeof echarts==='undefined')return null;
+  el.style.height=el.classList.contains('chart-sm')?'260px':'340px';
+  const old=echarts.getInstanceByDom(el);if(old)old.dispose();
+  const c=echarts.init(el);_charts.push(c);return c;
+}
+function _baseAxis(cats){
+  return {
+    animation:false,
+    grid:{left:70,right:24,top:42,bottom:44},
+    tooltip:{trigger:'axis'},
+    legend:{bottom:0,textStyle:{color:CH_MUT}},
+    toolbox:{right:8,top:0,feature:{
+      saveAsImage:{title:'保存图片',pixelRatio:2,backgroundColor:'#fff'},
+      dataZoom:{title:{zoom:'缩放',back:'还原'}},
+      restore:{title:'还原'},
+    }},
+    dataZoom:[{type:'inside',throttle:50}],
+    xAxis:{type:'category',data:cats,axisLabel:{color:CH_MUT},axisLine:{lineStyle:{color:CH_GRID}}},
+    yAxis:{type:'value',axisLabel:{color:CH_MUT},splitLine:{lineStyle:{color:CH_GRID}}},
+  };
+}
+function renderCharts(s,M){
+  if(typeof echarts==='undefined')return;
+  const nB=s.buildYears,nO=s.opYears,P=nB+nO+1;
+  const pCats=Array.from({length:P},(_,t)=>'第 '+(t+1)+' 年');
+  const oCats=Array.from({length:nO},(_,i)=>'第 '+(nB+i+1)+' 年');
+  let c=null;
+  /* 投资结构 */
+  c=_mk('chInvest');
+  if(c){
+    c.setOption({
+      animation:false,
+      tooltip:{trigger:'item',formatter:'{b}<br/>{c} 万元（{d}%）'},
+      legend:{bottom:0,textStyle:{color:CH_MUT}},
+      toolbox:{right:8,top:0,feature:{saveAsImage:{title:'保存图片',pixelRatio:2,backgroundColor:'#fff'}}},
+      series:[{name:'建设投资构成',type:'pie',radius:['42%','68%'],center:['50%','44%'],
+        data:[
+          {name:'建筑工程费',value:+M.gBuild.toFixed(2)},
+          {name:'设备购置费',value:+M.gEquip.toFixed(2)},
+          {name:'安装工程费',value:+M.gInst.toFixed(2)},
+          {name:'其他费用',value:+M.gOther.toFixed(2)},
+          {name:'预备费',value:+M.rsv.toFixed(2)},
+        ],
+        label:{formatter:'{b}\n{d}%',color:CH_INK,fontSize:12},
+        itemStyle:{borderColor:'#fff',borderWidth:2},
+      }],
+    });
+  }
+  /* 全部投资现金流 */
+  c=_mk('chCash');
+  if(c){
+    c.setOption(Object.assign(_baseAxis(pCats),{
+      title:{text:'全部投资现金流（万元）',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:100,top:42,bottom:44},
+      yAxis:[{type:'value',axisLabel:{color:CH_MUT},splitLine:{lineStyle:{color:CH_GRID}}},
+             {type:'value',axisLabel:{color:CH_MUT},splitLine:{show:false}}],
+      series:[
+        {name:'净现金流量',type:'bar',data:M.aiCf.map(v=>Math.round(v*100)/100),itemStyle:{color:CH_ACC,borderRadius:[3,3,0,0]},barMaxWidth:36,markLine:{silent:true,symbol:'none',label:{formatter:'NPV=0',color:CH_MUT,fontSize:10},lineStyle:{color:CH_GRID,type:'dashed'},data:[{yAxis:0}]}},
+        {name:'累计净现金流量',type:'line',yAxisIndex:1,data:M.aiCum.map(v=>Math.round(v*100)/100),symbolSize:5,lineStyle:{width:2.5,color:CH_ACC2},itemStyle:{color:CH_ACC2},markPoint:{symbol:'circle',symbolSize:10,itemStyle:{color:CH_ACC2},label:{formatter:'{b} {c}',fontSize:11,fontWeight:600,color:CH_INK},data:[{type:'max',name:'最高',label:{position:'left'}},{type:'min',name:'最低',label:{position:'right'}}]}},
+      ],
+    }));
+  }
+  /* 资本金现金流 */
+  c=_mk('chEqCash');
+  if(c){
+    c.setOption(Object.assign(_baseAxis(pCats),{
+      title:{text:'资本金现金流（万元）',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:100,top:42,bottom:44},
+      yAxis:[{type:'value',axisLabel:{color:CH_MUT},splitLine:{lineStyle:{color:CH_GRID}}},
+             {type:'value',axisLabel:{color:CH_MUT},splitLine:{show:false}}],
+      series:[
+        {name:'净现金流量',type:'bar',data:M.eqCf.map(v=>Math.round(v*100)/100),itemStyle:{color:CH_ACC,borderRadius:[3,3,0,0]},barMaxWidth:36,markLine:{silent:true,symbol:'none',label:{formatter:'NPV=0',color:CH_MUT,fontSize:10},lineStyle:{color:CH_GRID,type:'dashed'},data:[{yAxis:0}]}},
+        {name:'累计净现金流量',type:'line',yAxisIndex:1,data:M.eqCum.map(v=>Math.round(v*100)/100),symbolSize:5,lineStyle:{width:2.5,color:CH_ACC2},itemStyle:{color:CH_ACC2},markPoint:{symbol:'circle',symbolSize:10,itemStyle:{color:CH_ACC2},label:{formatter:'{b} {c}',fontSize:11,fontWeight:600,color:CH_INK},data:[{type:'max',name:'最高',label:{position:'left'}},{type:'min',name:'最低',label:{position:'right'}}]}},
+      ],
+    }));
+  }
+  /* 偿债能力 */
+  c=_mk('chDebt');
+  if(c){
+    const icr=M.icrY.map(v=>isFinite(v)?+v.toFixed(2):null);
+    const dscr=M.dscrY.map(v=>isFinite(v)?+v.toFixed(2):null);
+    c.setOption(Object.assign(_baseAxis(oCats),{
+      title:{text:'偿债能力与资产负债率',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:90,top:42,bottom:44},
+      yAxis:[{type:'value',name:'倍',axisLabel:{color:CH_MUT},splitLine:{lineStyle:{color:CH_GRID}}},
+             {type:'value',name:'%',axisLabel:{color:CH_MUT,formatter:'{value}%'},splitLine:{show:false}}],
+      series:[
+        {name:'资产负债率',type:'bar',yAxisIndex:1,data:M.bs.map(b=>+(b.debtRatio*100).toFixed(1)),itemStyle:{color:CH_ACC2,borderRadius:[3,3,0,0]},barMaxWidth:36},
+        {name:'利息备付率 ICR',type:'line',data:icr,symbolSize:5,lineStyle:{width:2.5,color:CH_ACC},itemStyle:{color:CH_ACC},markLine:{silent:true,symbol:'none',label:{formatter:'ICR=1',color:CH_ACC,fontSize:10,position:'insideEndTop'},lineStyle:{color:CH_ACC,type:'dashed'},data:[{yAxis:1}]}},
+        {name:'偿债备付率 DSCR',type:'line',data:dscr,symbolSize:5,lineStyle:{width:2.5,color:CH_GOOD},itemStyle:{color:CH_GOOD},markLine:{silent:true,symbol:'none',label:{formatter:'DSCR=1',color:CH_GOOD,fontSize:10,position:'insideEndBottom'},lineStyle:{color:CH_GOOD,type:'dashed'},data:[{yAxis:1}]}},
+      ],
+    }));
+  }
+  /* 交互式敏感性实时图 */
+  c=_mk('chSensLive');
+  if(c){
+    c.setOption(Object.assign(_baseAxis(['基准','当前情景']),{
+      title:{text:'基准 vs 当前情景（NPV，万元）',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:32,top:42,bottom:44},
+      series:[{name:'NPV',type:'bar',data:[+M.ind.ai.npv.toFixed(2),+M.ind.ai.npv.toFixed(2)],itemStyle:{color:CH_ACC,borderRadius:[4,4,0,0]},barMaxWidth:80,label:{show:true,position:'top',formatter:v=>f2(v.value),color:CH_INK,fontSize:12}}],
+    }));
+  }
+  /* 财务指标分析图 */
+  const A=M.analysis;
+  c=_mk('chTrend');
+  if(c&&A){
+    c.setOption(Object.assign(_baseAxis(oCats),{
+      title:{text:'收入、成本与净利润趋势（万元）',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:80,top:42,bottom:44},
+      series:[
+        {name:'营业收入',type:'line',data:M.revY.map(v=>+v.toFixed(2)),symbolSize:4,lineStyle:{width:2.5,color:CH_ACC},itemStyle:{color:CH_ACC}},
+        {name:'总成本费用',type:'line',data:M.totCostY.map(v=>+v.toFixed(2)),symbolSize:4,lineStyle:{width:2.5,color:CH_ACC2},itemStyle:{color:CH_ACC2}},
+        {name:'净利润',type:'line',data:M.netProfitY.map(v=>+v.toFixed(2)),symbolSize:4,lineStyle:{width:2.5,color:CH_GOOD},itemStyle:{color:CH_GOOD},markPoint:{symbol:'circle',symbolSize:10,itemStyle:{color:CH_GOOD},label:{formatter:'{b} {c}',fontSize:11,fontWeight:600,color:CH_INK},data:[{type:'max',name:'最高',label:{position:'left'}},{type:'min',name:'最低',label:{position:'right'}}]}},
+      ],
+    }));
+  }
+  c=_mk('chCostStruct');
+  if(c&&A){
+    c.setOption({
+      animation:false,
+      tooltip:{trigger:'item',formatter:'{b}<br/>{c} 万元（{d}%）'},
+      legend:{bottom:0,textStyle:{color:CH_MUT}},
+      toolbox:{right:8,top:0,feature:{saveAsImage:{title:'保存图片',pixelRatio:2,backgroundColor:'#fff'}}},
+      series:[{type:'pie',radius:['42%','68%'],center:['50%','45%'],
+        data:A.structures.cost.map(x=>({name:x.name,value:+x.value.toFixed(2)})),
+        label:{formatter:'{b}\n{d}%',color:CH_INK,fontSize:12},
+        itemStyle:{borderColor:'#fff',borderWidth:2},
+      }],
+    });
+  }
+  /* 盈亏平衡图 */
+  c=_mk('chBep');
+  if(c){
+    const ny=M.normalY,l=s.load[ny]||1;
+    const qMax=s.designQty*l*1.15;
+    const qUnit=qMax>10000?'万吨':'吨',qDiv=qMax>10000?10000:1;
+    const unitVar=(M.varCostY[ny]||0)/((s.designQty*l)||1);
+    const qs=Array.from({length:41},(_,i)=>qMax*i/40);
+    const unitRev=M.isCurrent?s.price/(1+s.vatRate):s.price;
+    const unitSurcharge=M.isCurrent?M.taxSurY[ny]/((s.designQty*l)||1):0;
+    const revLine=qs.map(q=>+(unitRev*q).toFixed(2));
+    const costLine=qs.map(q=>+(M.fixCostY[ny]+(unitVar+unitSurcharge)*q).toFixed(2));
+    const bepQ=isFinite(M.bepNormal)?M.bepQtyNormal:null;
+    c.setOption(Object.assign(_baseAxis(qs.map(q=>Math.round(q))),{
+      title:{text:'盈亏平衡分析（运营期第 '+(ny+1)+' 年，产量单位：'+qUnit+'）',textStyle:{color:CH_INK,fontSize:14}},
+      grid:{left:70,right:45,top:42,bottom:44},
+      xAxis:{type:'value',axisLabel:{color:CH_MUT,formatter:v=>Math.round(v/qDiv).toLocaleString('zh-CN')},axisLine:{lineStyle:{color:CH_GRID}},max:Math.round(qMax)},
+      series:[
+        {name:'营业收入',type:'line',data:qs.map((q,i)=>[q,revLine[i]]),showSymbol:false,itemStyle:{color:CH_ACC},lineStyle:{width:2.5}},
+        {name:M.isCurrent?'总成本及附加':'总成本费用',type:'line',data:qs.map((q,i)=>[q,costLine[i]]),showSymbol:false,itemStyle:{color:CH_ACC2},lineStyle:{width:2.5}},
+        ...(bepQ?[{name:'盈亏平衡点',type:'scatter',data:[[bepQ,+(unitRev*bepQ).toFixed(2)]],symbolSize:12,itemStyle:{color:CH_GOOD},
+          label:{show:true,formatter:'BEP '+pc(M.bepNormal,1),position:'top',color:CH_GOOD,fontWeight:600}}]:[]),
+      ],
+    }));
+  }
+  /* 3. 敏感性图 */
+  c=_mk('chSens');
+  if(c){
+    const ks=M.sens.ks.map(k=>(k<1?'':'+')+Math.round((k-1)*100)+'%');
+    c.setOption(Object.assign(_baseAxis(ks),{
+      title:{text:'敏感性分析：NPV 随不确定因素变动（万元）',textStyle:{color:CH_INK,fontSize:14}},
+      series:[
+        {name:'建设投资',type:'line',data:M.sens.inv.map(v=>Math.round(v*100)/100),symbolSize:6,lineStyle:{width:2.5},markLine:{silent:true,symbol:'none',label:{formatter:'NPV=0',color:CH_MUT,fontSize:10},lineStyle:{color:CH_GRID,type:'dashed'},data:[{yAxis:0}]}},
+        {name:'经营成本',type:'line',data:M.sens.opc.map(v=>Math.round(v*100)/100),symbolSize:6,lineStyle:{width:2.5}},
+        {name:'营业收入',type:'line',data:M.sens.rev.map(v=>Math.round(v*100)/100),symbolSize:6,lineStyle:{width:2.5}},
+      ],
+    }));
+  }
+}
+function initSensLab(s,baseM){
+  const lab=document.getElementById('sensLab');if(!lab)return;
+  const base=+lab.dataset.base;
+  const baseIrr=+lab.dataset.baseIrr;
+  const ids=['sensInv','sensOpc','sensRev'];
+  const inputs=ids.map(id=>document.getElementById(id));
+  if(inputs.some(x=>!x))return;
+  const outs=ids.map(id=>document.getElementById(id+'V'));
+  const setOut=(id,txt,cls)=>{const el=document.getElementById(id);if(el){el.textContent=txt;el.className=cls||'';}};
+  const update=()=>{
+    const vals=inputs.map(i=>+i.value);
+    outs.forEach((o,i)=>{o.textContent=(vals[i]>0?'+':'')+vals[i]+'%';});
+    const cur=computeModel(s,{inv:1+vals[0]/100,opc:1+vals[1]/100,rev:1+vals[2]/100});
+    const npv=cur.ind.ai.npv,irr=cur.ind.ai.irr,pt=cur.ind.ai.pt,eqIrr=cur.ind.eq.irr;
+    setOut('sensNpv',f2(npv)+' 万元',npv>=base?'pos':'neg');
+    setOut('sensIrr',pc(irr),irr>=s.i0?'pos':'neg');
+    setOut('sensPt',isFinite(pt)?f2(pt)+' 年':'未回收',isFinite(pt)&&pt<=s.ptBase?'pos':'neg');
+    setOut('sensEqIrr',pc(eqIrr),eqIrr>=(s.i0Equity??s.i0)?'pos':'neg');
+    const dN=npv-base,dI=irr-baseIrr;
+    const note=document.getElementById('sensNote');
+    if(note){
+      const npvTxt=Math.abs(dN)<0.005?'NPV 与基准情景持平':`NPV 较基准情景 ${dN>0?'增加':'减少'} ${f2(Math.abs(dN))} 万元`;
+      const irrTxt=Math.abs(dI)<0.00005?`IRR ${pc(irr)}，与基准情景持平`:`IRR ${pc(irr)}，较基准情景 ${dI>0?'上升':'下降'} ${Math.abs(dI*100).toFixed(2)} 个百分点`;
+      note.textContent=`当前情景：建设投资 ${vals[0]>=0?'+':''}${vals[0]}%、经营成本 ${vals[1]>=0?'+':''}${vals[1]}%、营业收入 ${vals[2]>=0?'+':''}${vals[2]}%；${npvTxt}，${irrTxt}（项目税后基准 ${pc(s.i0,2)}，资本金基准 ${pc(s.i0Equity??s.i0,2)}）。`;
+    }
+    const el=document.getElementById('chSensLive');
+    const inst=el&&typeof echarts!=='undefined'?echarts.getInstanceByDom(el):null;
+    if(inst)inst.setOption({series:[{data:[+base.toFixed(2),+npv.toFixed(2)]}]});
+  };
+  if(!lab.dataset.bound){
+    inputs.forEach((inp,i)=>inp.addEventListener('input',()=>{outs[i].textContent=(+inp.value>0?'+':'')+inp.value+'%';update();}));
+    const reset=document.getElementById('sensReset');
+    if(reset)reset.addEventListener('click',()=>{inputs.forEach(inp=>inp.value=0);update();});
+    lab.dataset.bound='1';
+  }
+  update();
+}
+window.addEventListener('resize',()=>_charts.forEach(c=>{try{c.resize();}catch(e){}}));
+window.addEventListener('beforeprint',()=>{if(lastM)renderCharts(lastReportState,lastM);});
+</script>
+<script>
+'use strict';
+/* ================= 方案对比 ================= */
+function scenByVal(v){
+  if(v==='cur')return {name:'当前参数（'+ (state.projName||'未命名') +'）',data:state};
+  const scens=loadScens();const sc=scens[+v];
+  return sc?{name:sc.name,data:normalizeState(Object.assign(clone(DEFAULTS),clone(sc.data)))}:null;
+}
+function refreshCmpSelects(){
+  const scens=loadScens();
+  const opts=`<option value="cur">当前参数（未保存的正在编辑方案）</option>`+
+    scens.map((sc,i)=>`<option value="${i}">${sc.name}</option>`).join('');
+  const A=document.getElementById('cmpA'),B=document.getElementById('cmpB');
+  A.innerHTML=opts;B.innerHTML=opts;
+  if(scens.length){B.value='0';}
+}
+const CMP_ROWS=[
+  {l:'计算期',get:(s,M)=>s.buildYears+' 年建设 + '+s.opYears+' 年运营'},
+  {l:'计算口径',get:(s,M)=>CAL_LBL[s.caliber]||'—'},
+  {l:'项目总投资（万元）',get:(s,M)=>f2(M.totalInv)},
+  {l:'全部投资 NPV（税后，万元）',get:(s,M)=>M.ind.ai.npv,dir:'high',fmt:v=>f2(v)},
+  {l:'全部投资 IRR（税后）',get:(s,M)=>M.ind.ai.irr,dir:'high',fmt:v=>pc(v)},
+  {l:'全部投资静态回收期（年）',get:(s,M)=>M.ind.ai.pt,dir:'low',fmt:v=>isFinite(v)?f2(v):'未回收'},
+  {l:'全部投资动态回收期（年）',get:(s,M)=>M.ind.ai.pd,dir:'low',fmt:v=>isFinite(v)?f2(v):'未回收'},
+  {l:'资本金 NPV（税后，万元）',get:(s,M)=>M.ind.eq.npv,dir:'high',fmt:v=>f2(v)},
+  {l:'资本金 IRR（税后）',get:(s,M)=>M.ind.eq.irr,dir:'high',fmt:v=>pc(v)},
+  {l:'总投资收益率（正常年）',get:(s,M)=>M.roiPre,dir:'high',fmt:v=>pc(v)},
+  {l:'资本金净利润率（正常年）',get:(s,M)=>M.roeNormal,dir:'high',fmt:v=>pc(v)},
+  {l:'盈亏平衡点（正常年）',get:(s,M)=>M.bepNormal,dir:'low',fmt:v=>pc(v)},
+  {l:'累计盈余资金最小值（万元）',get:(s,M)=>Math.min(...M.cumSurplusY),dir:'high',fmt:v=>f2(v)},
+  {l:'适用指标达标率',get:(s,M)=>{const items=judge(s,M).items.filter(i=>i.pass!==null);return items.filter(i=>i.pass).length/items.length;},dir:'high',fmt:v=>pc(v,0)},
+];
+function buildCompare(){
+  const root=document.getElementById('cmpRoot');
+  const va=document.getElementById('cmpA').value,vb=document.getElementById('cmpB').value;
+  const A=scenByVal(va),B=scenByVal(vb);
+  if(!A||!B){root.innerHTML='<p class="rp-note">请先在「录入参数」页保存至少一个方案，或选择「当前参数」进行对比。</p>';return;}
+  const error=modelInputError(A.data)||modelInputError(B.data);
+  if(error){root.textContent=error;return;}
+  const MA=computeModel(A.data),MB=computeModel(B.data);
+  const JA=judge(A.data,MA),JB=judge(B.data,MB);
+  const passN=J=>J.items.filter(i=>i.pass).length;
+  const applicableN=J=>J.items.filter(i=>i.pass!==null).length;
+  let cards=`<div class="cmp-cards">
+    <div class="cmp-card"><div class="t">方案 A</div><div class="n">${A.name}</div>
+      <div class="m">${JA.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JA)}/${applicableN(JA)}）</div></div>
+    <div class="cmp-card"><div class="t">方案 B</div><div class="n">${B.name}</div>
+      <div class="m">${JB.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JB)}/${applicableN(JB)}）</div></div>
+  </div>`;
+  let rows=CMP_ROWS.map(r=>{
+    const a=r.get(A.data,MA),b=r.get(B.data,MB);
+    let ca='',cb='';
+    if(r.dir&&isFinite(a)&&isFinite(b)&&a!==b){
+      const aWin=r.dir==='high'?a>b:a<b;
+      ca=aWin?'win':'lose';cb=aWin?'lose':'win';
+    }
+    const fmt=v=>r.fmt?r.fmt(v):String(v);
+    return `<tr><td class="l">${r.l}</td><td class="${ca}">${fmt(a)}</td><td class="${cb}">${fmt(b)}</td></tr>`;
+  }).join('');
+  root.innerHTML=cards+
+    `<div class="cmp-table-wrap"><table class="cmp"><caption>双方案指标对比（绿色为占优方案）</caption>
+     <thead><tr><th class="l">指标</th><th>方案 A：${A.name}</th><th>方案 B：${B.name}</th></tr></thead>
+     <tbody>${rows}</tbody></table></div>
+     <div class="cmp-charts"><div class="chart" id="chCmpNpv"></div><div class="chart" id="chCmpIrr"></div></div>
+     <div class="cmp-radar"><div class="chart" id="chCmpRadar"></div></div>`;
+  if(typeof echarts!=='undefined'){
+    const names=['方案 A','方案 B'];
+    const c1=_mk('chCmpNpv');
+    if(c1)c1.setOption(Object.assign(_baseAxis(['全部投资 NPV（税后）','资本金 NPV（税后）']),{
+      title:{text:'净现值对比（万元）',textStyle:{color:CH_INK,fontSize:14}},
+      series:[
+        {name:'方案 A',type:'bar',data:[Math.round(MA.ind.ai.npv*100)/100,Math.round(MA.ind.eq.npv*100)/100],itemStyle:{color:CH_ACC,borderRadius:[4,4,0,0]},barMaxWidth:56},
+        {name:'方案 B',type:'bar',data:[Math.round(MB.ind.ai.npv*100)/100,Math.round(MB.ind.eq.npv*100)/100],itemStyle:{color:CH_ACC2,borderRadius:[4,4,0,0]},barMaxWidth:56},
+      ]}));
+    const c2=_mk('chCmpIrr');
+    if(c2)c2.setOption(Object.assign(_baseAxis(['全部投资 IRR（税后）','资本金 IRR（税后）','总投资收益率']),{
+      title:{text:'收益率对比（%）',textStyle:{color:CH_INK,fontSize:14}},
+      yAxis:{type:'value',axisLabel:{color:CH_MUT,formatter:'{value}%'},splitLine:{lineStyle:{color:CH_GRID}}},
+      series:[
+        {name:'方案 A',type:'bar',data:[+(MA.ind.ai.irr*100).toFixed(2),+(MA.ind.eq.irr*100).toFixed(2),+(MA.roiPre*100).toFixed(2)],itemStyle:{color:CH_ACC,borderRadius:[4,4,0,0]},barMaxWidth:56},
+        {name:'方案 B',type:'bar',data:[+(MB.ind.ai.irr*100).toFixed(2),+(MB.ind.eq.irr*100).toFixed(2),+(MB.roiPre*100).toFixed(2)],itemStyle:{color:CH_ACC2,borderRadius:[4,4,0,0]},barMaxWidth:56},
+      ]}));
+    const c3=_mk('chCmpRadar');
+    if(c3){
+      const metrics=[
+        {name:'全部投资NPV',a:MA.ind.ai.npv,b:MB.ind.ai.npv,dir:'high'},
+        {name:'全部投资IRR',a:MA.ind.ai.irr,b:MB.ind.ai.irr,dir:'high'},
+        {name:'资本金IRR',a:MA.ind.eq.irr,b:MB.ind.eq.irr,dir:'high'},
+        {name:'总投资收益率',a:MA.roiPre,b:MB.roiPre,dir:'high'},
+        {name:'静态回收期',a:MA.ind.ai.pt,b:MB.ind.ai.pt,dir:'low'},
+        {name:'动态回收期',a:MA.ind.ai.pd,b:MB.ind.ai.pd,dir:'low'},
+        {name:'盈亏平衡点',a:MA.bepNormal,b:MB.bepNormal,dir:'low'},
+        {name:'财务生存能力',a:Math.min(...MA.cumSurplusY),b:Math.min(...MB.cumSurplusY),dir:'high'},
+      ];
+      const score=(v,other,dir)=>{
+        if(!isFinite(v))return 0;
+        const m=Math.max(Math.abs(v),Math.abs(isFinite(other)?other:0),1e-9);
+        return dir==='high'?Math.max(0,Math.min(100,v/m*100)):Math.max(0,Math.min(100,(1-v/(m*1.15))*100));
+      };
+      c3.setOption({
+        animation:false,
+        title:{text:'综合指标雷达（归一化，越大越优）',left:'center',textStyle:{color:CH_INK,fontSize:14}},
+        tooltip:{},
+        legend:{bottom:0,textStyle:{color:CH_MUT}},
+        toolbox:{right:8,top:0,feature:{saveAsImage:{title:'保存图片',pixelRatio:2,backgroundColor:'#fff'}}},
+        radar:{indicator:metrics.map(m=>({name:m.name,max:100})),radius:'60%',center:['50%','48%'],axisName:{color:CH_MUT,fontSize:11},splitLine:{lineStyle:{color:CH_GRID}},splitArea:{areaStyle:{color:['#faf8f2','#ffffff']}}},
+        series:[{type:'radar',data:[
+          {name:'方案 A',value:metrics.map(m=>+score(m.a,m.b,m.dir).toFixed(1)),areaStyle:{color:'rgba(47,75,215,.18)'},lineStyle:{color:CH_ACC,width:2},itemStyle:{color:CH_ACC}},
+          {name:'方案 B',value:metrics.map(m=>+score(m.b,m.a,m.dir).toFixed(1)),areaStyle:{color:'rgba(201,168,106,.18)'},lineStyle:{color:CH_ACC2,width:2},itemStyle:{color:CH_ACC2}},
+        ]}],
+      });
+    }
+  }
+}
+document.getElementById('btnCmp').onclick=buildCompare;
+
+/* ================= 课堂练习 ================= */
+let QUIZ=null;
+function makeQ(q,correct,distractors,explain){
+  const ds=Array.isArray(distractors)?distractors:[distractors];
+  const opts=[correct,...ds].filter((v,i,a)=>a.indexOf(v)===i);
+  while(opts.length<4)opts.push('—');
+  for(let i=opts.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=opts[i];opts[i]=opts[j];opts[j]=t;}
+  return {q,opts,ans:opts.indexOf(correct),explain};
+}
+function quizNumQ(q,correct,fmt,explain){
+  if(!isFinite(correct)||Math.abs(correct)<1e-9)return null;
+  const opts=[fmt(correct)];
+  const cands=[correct*1.12,correct*0.88,correct*1.25,correct*0.75];
+  if(correct<0)cands.push(Math.abs(correct)*0.5);
+  for(const v of cands){const t=fmt(v);if(!opts.includes(t)&&opts.length<4)opts.push(t);}
+  while(opts.length<4)opts.push(fmt(correct*(1+opts.length*0.05)));
+  return makeQ(q,opts[0],opts.slice(1,4),explain);
+}
+function buildQuiz(){
+  const error=modelInputError(state);
+  if(error){toast(error);return;}
+  normalizeState(state);
+  const s=state;
+  const M=computeModel(s,{inv:1});
+  const qs=[];
+  if(isFinite(M.ind.ai.npv))qs.push(quizNumQ(`本项目全部投资税后财务净现值（i₀=${pc(s.i0,0)}）约为？`,M.ind.ai.npv,v=>f2(v),`NPV = Σ CFt/(1+${pc(s.i0,0)})^t = ${f2(M.ind.ai.npv)} 万元。`));
+  if(isFinite(M.ind.ai.irr))qs.push(quizNumQ('本项目全部投资税后内部收益率约为？',M.ind.ai.irr,v=>pc(v,2),`使 NPV=0 的折现率，经迭代求解为 ${pc(M.ind.ai.irr)}。`));
+  if(isFinite(M.ind.ai.pt))qs.push(quizNumQ('全部投资静态回收期（含建设期）约为？',M.ind.ai.pt,v=>f2(v)+' 年',`累计净现金流量转正的时点，含 ${s.buildYears} 年建设期，Pt=${f2(M.ind.ai.pt)} 年。`));
+  const mRev=computeModel(s,{rev:0.9});
+  if(isFinite(mRev.ind.ai.npv))qs.push(quizNumQ('若营业收入下降 10%、其他条件不变，全部投资 NPV 约为？',mRev.ind.ai.npv,v=>f2(v),`营业收入×0.9 后重算，NPV=${f2(mRev.ind.ai.npv)} 万元；较基准减少 ${f2(M.ind.ai.npv-mRev.ind.ai.npv)} 万元。`));
+  const mInv=computeModel(s,{inv:1.1});
+  if(isFinite(mInv.ind.ai.irr))qs.push(quizNumQ('若建设投资上升 10%、其他条件不变，全部投资 IRR 约为？',mInv.ind.ai.irr,v=>pc(v,2),`建设投资×1.1 后重算，IRR=${pc(mInv.ind.ai.irr)}；较基准 ${((mInv.ind.ai.irr-M.ind.ai.irr)*100).toFixed(2)} 个百分点。`));
+  if(isFinite(M.bepNormal))qs.push(quizNumQ('正常年盈亏平衡点（生产能力利用率）约为？',M.bepNormal,v=>pc(v,1),`BEP=固定成本÷${M.isCurrent?'满产贡献额':'该年贡献额'}=${pc(M.bepNormal,1)}。`));
+  qs.push(makeQ('按《建设项目经济评价方法与参数》，项目资本金现金流量表的现金流出应包括？',
+    '借款本金偿还、全部借款利息、经营成本、税金及附加和所得税',
+    ['仅长期借款利息和经营成本','建设投资和流动资金','营业收入和补贴收入'],
+    '资本金口径需反映全部融资成本：长期借款本息、流动资金借款利息及本金偿还，以及经营成本、税金和所得税。'));
+  qs.push(makeQ('现行规范口径下，融资前项目投资现金流量表中的建设投资应如何计列？',
+    '不含建设期利息',['含建设期利息','仅含设备购置费','含流动资金'],
+    '融资前分析剔除融资影响，建设期利息属于融资成本，仅在融资后分析中体现。'));
+  if(!M.isCurrent){
+    qs.push(makeQ('原表增值税差额折算的计算基础是？',
+      '营业收入−外购原材料−外购燃料动力',['营业收入全额','利润总额','经营成本'],
+      '原表将收入和指定外购成本的差额按历史税率折算。'));
+  }else if(s.vatMethod==='simple'){
+    qs.push(makeQ('本方案采用简易计税，应缴增值税如何估算？',
+      '不含税销售额×征收率',['含税销售额×征收率','销项税额−进项税额','税前利润×征收率'],
+      '先把含税销售额换算为不含税销售额，再乘征收率。'));
+  }else{
+    qs.push(makeQ('本方案采用一般计税，应缴增值税如何估算？',
+      '销项税额扣除可抵扣进项及上期留抵',['含税销售额×税率','利润总额×税率','经营成本×税率'],
+      '当期不足抵扣的余额结转到下一期。'));
+  }
+  qs.push(makeQ('财务生存能力的判断标准是？',
+    '运营期各年累计盈余资金均≥0',['NPV≥0','IRR≥基准收益率','资产负债率≤100%'],
+    '《方法与参数》第三版要求各年累计盈余资金非负。'));
+  QUIZ=qs.filter(Boolean);
+  renderQuiz();
+}
+function renderQuiz(){
+  const root=document.getElementById('quizRoot');if(!root||!QUIZ)return;
+  root.innerHTML=QUIZ.map((q,i)=>`<div class="quiz-card" data-i="${i}">
+    <div class="quiz-q"><span class="no">${String(i+1).padStart(2,'0')}</span>${q.q}</div>
+    <div class="quiz-opts">${q.opts.map((o,j)=>`<label class="quiz-option"><input type="radio" name="quiz-${i}" value="${j}"><span>${'ABCD'[j]}. ${o}</span></label>`).join('')}</div>
+    <div class="quiz-explain" hidden>解析：${q.explain}</div>
+  </div>`).join('');
+  const score=document.getElementById('quizScore');if(score)score.textContent='';
+  root.dataset.built='1';
+}
+function submitQuiz(){
+  if(!QUIZ)return;
+  const root=document.getElementById('quizRoot');
+  const cards=[...root.querySelectorAll('.quiz-card')];
+  let correct=0;
+  QUIZ.forEach((q,i)=>{
+    const card=cards[i];if(!card)return;
+    const sel=card.querySelector('input:checked');
+    const chosen=sel?+sel.value:-1;
+    card.querySelectorAll('.quiz-option').forEach((l,j)=>{
+      l.classList.toggle('correct',j===q.ans);
+      l.classList.toggle('wrong',j===chosen&&j!==q.ans);
+    });
+    const ex=card.querySelector('.quiz-explain');if(ex)ex.hidden=false;
+    if(chosen===q.ans)correct++;
+  });
+  root.querySelectorAll('input').forEach(i=>i.disabled=true);
+  const score=document.getElementById('quizScore');
+  if(score)score.textContent=`得分：${correct} / ${QUIZ.length}（${Math.round(correct/QUIZ.length*100)} 分）`;
+}
+document.getElementById('btnQuizNew').onclick=()=>buildQuiz();
+document.getElementById('btnQuizSubmit').onclick=submitQuiz;
+
+/* ================= 导出 ================= */
+function fileStem(s=lastReportState){
+  return (s.projName||'项目财务评估报告').replace(/[\\/:*?"<>|]/g,'')+'_'+new Date().toISOString().slice(0,10);
+}
+function ensureReport(){
+  const error=modelInputError(state);
+  if(error){toast(error);return false;}
+  if(!lastM||JSON.stringify(normalizeState(clone(state)))!==JSON.stringify(lastReportState))return Boolean(generate());
+  return true;
+}
+function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('Excel 组件尚未加载完成，请稍候再试');return;}
+  if(!ensureReport())return;
+  const s=lastReportState,M=lastM,J=judge(s,M);
+  const wb=XLSX.utils.book_new();
+  const used={};
+  const numOrText=t=>{
+    const n=parseFloat(t.replace(/[,%\s万元]/g,''));
+    return (t!==''&&!isNaN(n)&&/^-?[\d,.]+$/.test(t.replace(/[%\s万元]/g,'')))?n:t;
+  };
+  const addSheet=(nm,rows,widths)=>{
+    nm=nm.replace(/[\\/?*\[\]:]/g,' ').trim().slice(0,31)||'表';
+    let k=1,base=nm;while(used[nm])nm=(base.slice(0,28)+'_'+(++k));used[nm]=1;
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    if(widths)ws['!cols']=widths.map(w=>({wch:w}));
+    /* 表头加粗 + 冻结首行 */
+    const range=XLSX.utils.decode_range(ws['!ref']);
+    for(let c=range.s.c;c<=range.e.c;c++){
+      const cell=ws[XLSX.utils.encode_cell({r:0,c})];
+      if(cell)cell.s={font:{bold:true}};
+    }
+    ws['!freeze']={xSplit:0,ySplit:1};
+    wb.SheetNames.push(nm);wb.Sheets[nm]=ws;
+  };
+
+  /* 首页：评估结论 */
+  const head=[
+    ['投资项目财务评估报告 —— 评估结论'],
+    [],
+    ['项目名称',s.projName||'（未命名）','','建设地点',s.projPlace||'—','','所属行业',s.projIndustry||'—'],
+    ['计算期',`${s.buildYears+s.opYears} 年（建设期 ${s.buildYears} 年 + 运营期 ${s.opYears} 年）`,'','还款方式',REPAY_LBL[s.repayMethod],'','计息口径',INT_LBL[s.buildIntMode]],
+    ['计算口径',CAL_LBL[s.caliber],'','项目税后基准',pc(s.i0,2),'','编制日期',new Date().toLocaleDateString('zh-CN')],
+    ['项目税前基准',pc(s.i0Pre??s.i0,2),'','资本金税后基准',pc(s.i0Equity??s.i0,2)],
+    ['报告编号',s.reportNo||'—','','编制单位',s.reportOrg||'—','','报告日期',s.reportDate||new Date().toLocaleDateString('zh-CN')],
+    [],
+    ['指标','数值','单位','判断标准','评价'],
+  ];
+  J.items.forEach(it=>head.push([it.label,it.disp,it.unit||'',it.base,it.pass===null?'不适用':it.pass?'达标':'未达标']));
+  head.push([],['综合结论',J.passAll?'财务可行（全部指标达标）':'财务可行性未完全满足（存在未达标指标）']);
+  head.push([],['总投资',f2(M.totalInv),'万元','',''],['资本金合计',f2(M.capTotal),'万元','',''],
+    ['总投资收益率（正常年）',pc(M.roiPre),'','',''],['盈亏平衡点（正常年）',pc(M.bepNormal),'','','']);
+  addSheet('评估结论',head,[34,30,8,22,10,14,10,16]);
+
+  /* 参数清单 */
+  const paramRows=[['参数类别','参数名称','取值','单位','说明']];
+  SECTIONS.forEach(sec=>{
+    (sec.items||[]).forEach(it=>{
+      let v=getPath(s,it.k);
+      if(it.sel){const o=it.sel.find(x=>x[0]===v);v=o?o[1]:v;}
+      else if(it.pct&&typeof v==='number')v=pc(v,2);
+      paramRows.push([sec.title.replace(/（.*/,''),it.l,v==null?'':String(v),it.u||'',it.txt?'文本':'']);
+    });
+    if(sec.dyn==='load')s.load.forEach((v,i)=>paramRows.push([sec.title,'生产负荷（运营期第 '+(i+1)+' 年）',pc(v,0),'','']));
+    if(sec.dyn==='split'){
+      for(let i=0;i<s.buildYears;i++){
+        paramRows.push([sec.title,'第 '+(i+1)+' 年建设投资占比',pc(s.invSplit[i],0),'','']);
+        paramRows.push([sec.title,'第 '+(i+1)+' 年借款比例',pc(s.loanRatio[i],0),'','']);
+      }
+    }
+  });
+  s.engItems.forEach(it=>paramRows.push(['工程费用',it.name,'工程量 '+it.qty+'，单价 '+it.price+' 元，设备购置费 '+it.equip+' 万元','','']));
+  addSheet('参数清单',paramRows,[24,34,34,10,12]);
+
+  /* 合规检查 */
+  const CC=complianceCheck(s);
+  const statusLbl={ok:'符合',warn:'关注',info:'提示'};
+  const groupLbl={tax:'税费',region:'地区与费用',industry:'行业参数',method:'方法口径',report:'报告要素'};
+  const crow=[
+    ['规则库版本',CC.version,'行业',CC.industry,'省份',CC.province,'所在地',CC.location],
+    ['费用依据',CC.feeCount+' 项','规则说明',CC.disclaimer],
+    [],
+    ['类别','检查项','本报告取值','依据','结论','建议/说明'],
+  ];
+  CC.items.forEach(it=>crow.push([groupLbl[it.group]||'其他',it.label,it.value,it.basis,statusLbl[it.status],it.note]));
+  addSheet('合规检查',crow,[14,24,26,46,10,46]);
+
+  /* 规则库明细 */
+  const RR=(typeof PFE_RULES!=='undefined')?PFE_RULES:null;
+  if(RR){
+    const rr=[
+      ['规则库版本',RR.version,'生效日期',RR.effectiveDate],
+      ['说明',RR.disclaimer],
+      [],
+      ['行业参数','基准收益率参考','最低资本金','增值税参考','折旧年限参考','备注'],
+    ];
+    RR.industries.forEach(i=>rr.push([i.name,pc(i.i0Range[0],0)+'–'+pc(i.i0Range[1],0),pc(i.minCapital,0),i.vatRate!=null?pc(i.vatRate,0):'—',i.depRange[0]+'–'+i.depRange[1]+' 年',i.note||'']));
+    rr.push([],['费用依据编号','费用名称','计算基数','依据文件','适用范围','状态']);
+    RR.feeRules.forEach(f=>rr.push([f.code,f.name,f.base,f.doc,'国家',f.status==='active'?'现行':'参考']));
+    (RR.provinceFeeDocs[s.province]||[]).forEach((f,i)=>rr.push(['P'+String(i+1).padStart(2,'0'),f.name,'—',f.doc,s.province,'参考']));
+    addSheet('规则库',rr,[14,30,32,42,14,10]);
+  }
+
+  /* 财务分析结果 */
+  const AA=(lastM&&lastM.analysis)?lastM.analysis:analyzeModel(s,lastM||computeModel(s),J);
+  if(AA){
+    const ar=[
+      ['财务指标分析结果（方法：比率/趋势/结构/敏感性/规则判断）'],[],
+      ['规则判断',AA.classification.level],['判断原因',AA.classification.reasons.join('；')],[],
+      ['核心指标','类别','指标','数值','基准/参考','结论','计算方法'],
+      ...AA.indicators.map(it=>[it.name,it.group,it.name,it.value,it.benchmark,it.status,it.method]),
+      [],['趋势分析','指标','首年','末年','变化率','CAGR','年均斜率','R²','方向'],
+      ...AA.trends.map(t=>[t.label,t.label,t.first,t.last,t.changePct,t.cagr,t.slope,t.r2,t.direction]),
+      [],['结构分析','结构','项目','金额（万元）','占比'],
+    ];
+    const groupLbl={investment:'建设投资',cost:'正常年总成本',financing:'融资',assets:'资产',liabilities:'负债与权益'};
+    Object.entries(AA.structures).forEach(([k,items])=>items.forEach(x=>ar.push([groupLbl[k]||k,x.name,x.value,x.share])));
+    ar.push([],['敏感性','因素','±20%NPV变动','每1%变动','敏感度系数','NPV=0临界点']);
+    const critMap=Object.fromEntries(AA.sensitivity.critical.map(c=>[c.name,c]));
+    AA.sensitivity.ranking.forEach(f=>ar.push([f.name,f.name,f.change,f.perPct,f.elasticity,critMap[f.name]&&critMap[f.name].changePct!=null?critMap[f.name].changePct:'范围内未出现']));
+    ar.push([],['分析结论']);
+    AA.conclusions.forEach(c=>ar.push([c]));
+    ar.push([],['分析局限'],...AA.limitations.map(x=>[x]));
+    addSheet('财务分析',ar,[14,18,30,16,16,14,14,12,12]);
+  }
+
+  /* 分节分析提示 */
+  const II=buildInsights(s,lastM||computeModel(s),J,AA);
+  const irows=[['章节','级别','要点','说明']];
+  Object.entries(II).forEach(([k,items])=>items.forEach(it=>irows.push([INSIGHT_LABELS[k]||k,it.level,it.title,it.text])));
+  addSheet('分析提示',irows,[18,10,24,90]);
+
+  /* 各报表 */
+  const tables=document.querySelectorAll('#reportRoot table.rtable, #reportRoot table.cmp');
+  tables.forEach((tb,i)=>{
+    const cap=tb.querySelector('caption')?.textContent||('表'+(i+1));
+    const rows=[...tb.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>numOrText(td.textContent.trim())));
+    const w=[26,...new Array(rows[0]?rows[0].length-1:5).fill(12)];
+    addSheet(cap,rows,w);
+  });
+
+  /* 末页：计算过程 */
+  const calcRows=[['附录 · 计算过程详解（公式与代入数值）'],[]];
+  document.querySelectorAll('#reportRoot .calc').forEach(c=>{
+    calcRows.push([c.querySelector('h4')?.textContent.trim()||'']);
+    c.querySelectorAll('.fx').forEach(f=>{
+      calcRows.push([f.querySelector('.ft')?.textContent.trim()||'',f.querySelector('.fm')?.textContent.trim()||'']);
+    });
+    const nt=c.querySelector('.note');if(nt)calcRows.push(['说明',nt.textContent.trim()]);
+    calcRows.push([]);
+  });
+  addSheet('计算过程',calcRows,[40,90]);
+
+  XLSX.writeFile(wb,fileStem()+'.xlsx');
+  toast('已导出 Excel（'+wb.SheetNames.length+' 个工作表）');
+}
+/* ---------- Word (.docx) 导出 ---------- */
+function docxLib(){return (typeof docx!=='undefined'&&docx.Document)?docx:null;}
+function docFileName(s){
+  const d=new Date().toISOString().slice(0,10);
+  const no=(s.reportNo&&s.reportNo!=='—')?s.reportNo+'_':'';
+  return (no+(s.projName||'项目')+'_财务评价专章_'+d).replace(/[\\/:*?"<>|]/g,'')+'.docx';
+}
+function chartImageData(el){
+  try{
+    const inst=typeof echarts!=='undefined'?echarts.getInstanceByDom(el):null;
+    if(!inst)return null;
+    let hadToolbox=false;
+    try{
+      const opt=inst.getOption();
+      hadToolbox=Array.isArray(opt.toolbox)&&opt.toolbox.some(t=>t&&t.show!==false);
+      if(hadToolbox)inst.setOption({toolbox:{show:false}});
+      inst.getZr().flush();
+      const url=inst.getDataURL({pixelRatio:2,backgroundColor:'#fff'});
+      const w=Math.min(620,Math.max(420,el.clientWidth||620));
+      const h=Math.max(220,Math.round(w*(el.clientHeight||340)/(el.clientWidth||620)));
+      return {data:url,width:w,height:h};
+    }finally{
+      if(hadToolbox){try{inst.setOption({toolbox:{show:true}});inst.getZr().flush();}catch(e){}}
+    }
+  }catch(e){return null;}
+}
+function docxRuns(node,D,opt){
+  opt=opt||{};
+  const size=opt.size||21,color=opt.color||'141625',font=opt.font||'宋体';
+  const runs=[];
+  node.childNodes.forEach(n=>{
+    if(n.nodeType===3){
+      const t=n.textContent.replace(/\s+/g,' ');
+      if(t.trim())runs.push(new D.TextRun({text:t,font,size,color,bold:!!opt.bold}));
+    }else if(n.nodeType===1){
+      docxRuns(n,D,{size,color,font,bold:!!opt.bold||n.tagName==='B'||n.tagName==='STRONG'}).forEach(r=>runs.push(r));
+    }
+  });
+  return runs;
+}
+function docxParaFromNode(node,D,opt){
+  opt=opt||{};
+  const runs=docxRuns(node,D,opt);
+  if(!runs.length)runs.push(new D.TextRun({text:(node.textContent||'').trim(),font:opt.font||'宋体',size:opt.size||21,color:opt.color||'141625',bold:!!opt.bold}));
+  return new D.Paragraph({alignment:opt.align,shading:opt.shading,spacing:opt.spacing||{after:100,line:360},keepNext:opt.keepNext,children:runs});
+}
+function docxTextTable(D,headers,rows,widths,leftAll){
+  const border={style:D.BorderStyle.SINGLE,size:4,color:'B9BDCE'};
+  const all=headers?[headers,...rows]:rows;
+  const maxc=Math.max(...all.map(r=>r.length));
+  const totalW=9360;
+  const w=widths||[Math.round(totalW*0.3),...new Array(Math.max(0,maxc-1)).fill(Math.round(totalW*0.7/Math.max(1,maxc-1)))];
+  return new D.Table({
+    width:{size:100,type:D.WidthType.PERCENTAGE},
+    borders:{top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border},
+    rows:all.map((cells,ri)=>{
+      const isHead=!!headers&&ri===0;
+      return new D.TableRow({tableHeader:isHead,cantSplit:true,children:cells.map((text,ci)=>{
+        const isLeft=leftAll||ci===0;
+        return new D.TableCell({
+          width:{size:w[ci]||w[w.length-1],type:D.WidthType.DXA},
+          margins:{top:30,bottom:30,left:50,right:50},
+          shading:isHead?{fill:'F2F2F2',type:D.ShadingType.CLEAR}:undefined,
+          verticalAlign:D.VerticalAlign.CENTER,
+          children:[new D.Paragraph({alignment:(isHead?(ci===0?D.AlignmentType.LEFT:D.AlignmentType.CENTER):(isLeft?D.AlignmentType.LEFT:D.AlignmentType.RIGHT)),spacing:{before:0,after:0,line:230},children:[new D.TextRun({text:String(text==null?'':text),font:'宋体',size:15,bold:isHead,color:'141625'})]})]
+        });
+      })});
+    })
+  });
+}
+function docxTableFromDom(tb,D,colIdx,capText){
+  const rows=[...tb.querySelectorAll('tr')];
+  if(!rows.length)return null;
+  const idx=colIdx||null;
+  const maxc=idx?idx.length:Math.max(...rows.map(r=>r.children.length));
+  const totalW=9360,firstW=Math.round(totalW*(idx?0.20:0.24));
+  const otherW=Math.max(240,Math.floor((totalW-firstW)/Math.max(1,maxc-1)));
+  const cap=capText||(tb.querySelector('caption')?.textContent||'');
+  let widths=null;
+  if(/合规检查/.test(cap)) widths=[1000,1500,1100,2500,800,2460];
+  else if(/费用依据库/.test(cap)) widths=[900,2300,1900,2800,1460];
+  else if(/行业参数参考/.test(cap)) widths=[2000,2200,5160];
+  else if(/主要编制依据/.test(cap)) widths=[2800,2000,2500,2060];
+  const fs=idx?14:(maxc>18?10:(maxc>12?12:15));
+  const border={style:D.BorderStyle.SINGLE,size:4,color:'B9BDCE'};
+  const cellMargins={top:30,bottom:30,left:50,right:50};
+  return new D.Table({
+    width:{size:100,type:D.WidthType.PERCENTAGE},
+    borders:{top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border},
+    rows:rows.map(tr=>{
+      const cells=idx?idx.map(i=>tr.children[i]).filter(Boolean):[...tr.children];
+      const isHead=cells.some(c=>c.tagName==='TH');
+      const hl=tr.classList.contains('hl');
+      return new D.TableRow({tableHeader:isHead,cantSplit:true,children:cells.map((c,ci)=>{
+        const text=(c.textContent||'').replace(/\s+/g,' ').trim();
+        const isLeft=ci===0||c.classList.contains('l');
+        const align=isHead?(ci===0?D.AlignmentType.LEFT:D.AlignmentType.CENTER):(isLeft?D.AlignmentType.LEFT:D.AlignmentType.RIGHT);
+        return new D.TableCell({
+          width:{size:widths?(widths[ci]||widths[widths.length-1]):(ci===0?firstW:otherW),type:D.WidthType.DXA},
+          margins:cellMargins,
+          shading:isHead?{fill:'F2F2F2',type:D.ShadingType.CLEAR}:(hl?{fill:'F7F5EF',type:D.ShadingType.CLEAR}:undefined),
+          verticalAlign:D.VerticalAlign.CENTER,
+          children:[new D.Paragraph({alignment:align,spacing:{before:0,after:0,line:220},children:[new D.TextRun({text,font:'宋体',size:fs,bold:isHead||hl,color:/^-/.test(text)?'B02A37':'141625'})]})]
+        });
+      })});
+    })
+  });
+}
+function docxTablesFromDom(tb,D){
+  const rows=[...tb.querySelectorAll('tr')];
+  if(!rows.length)return [];
+  const maxc=Math.max(...rows.map(r=>r.children.length));
+  const capText=tb.querySelector('caption')?.textContent||'';
+  const dataCols=Math.max(0,maxc-1);
+  const chunk=10;
+  if(dataCols<=chunk)return [{caption:capText,table:docxTableFromDom(tb,D,null,capText)}];
+  const parts=[],total=Math.ceil(dataCols/chunk);
+  for(let start=1;start<maxc;start+=chunk){
+    const idx=[0,...Array.from({length:Math.min(chunk,maxc-start)},(_,i)=>start+i)];
+    parts.push({caption:`${capText}（第 ${parts.length+1}/${total} 部分）`,table:docxTableFromDom(tb,D,idx,capText)});
+  }
+  return parts;
+}
+function docxCoverChildren(s,D){
+  const date=s.reportDate||new Date().toLocaleDateString('zh-CN');
+  const meta=(k,v)=>new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:60},children:[new D.TextRun({text:k+'：'+(v||'—'),font:'宋体',size:21,color:'3C4152'})]});
+  return [
+    new D.Paragraph({spacing:{before:2400},alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:'建设项目经济评价',font:'黑体',size:24,bold:true,color:'9A7422'})]}),
+    new D.Paragraph({spacing:{before:300,after:80},alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:s.projName||'（未命名项目）',font:'黑体',size:44,bold:true,color:'141625'})]}),
+    new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:'财务评价专章',font:'黑体',size:30,bold:true,color:'141625'})]}),
+    new D.Paragraph({spacing:{before:1600},alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:'（可行性研究报告附件）',font:'宋体',size:21,color:'71778A'})]}),
+    new D.Paragraph({spacing:{before:800},children:[]}),
+    meta('建设地点',s.projPlace),
+    meta('所属行业',s.projIndustry),
+    meta('编制单位',s.reportOrg),
+    meta('报告编号',s.reportNo),
+    meta('计算口径',CAL_LBL[s.caliber]),
+    meta('报告日期',date),
+  ];
+}
+function docxTocChildren(D){
+  return [
+    new D.Paragraph({spacing:{after:200},children:[new D.TextRun({text:'目录',font:'黑体',size:32,bold:true,color:'141625'})]}),
+    new D.TableOfContents('',{hyperlink:true,headingStyleRange:'1-2'}),
+    new D.Paragraph({spacing:{before:120},children:[new D.TextRun({text:'（如目录页码未显示，在 Word 中右键目录 → 更新域）',font:'宋体',size:17,color:'71778A'})]}),
+    new D.Paragraph({pageBreakBefore:true,children:[]}),
+  ];
+}
+function docxBodyChildren(root,D,s){
+  const out=[];
+  const add=p=>{if(p)out.push(p);};
+  let h1=0;
+  const addHeading=(text,level,pageBreak)=>{
+    const isH1=level===D.HeadingLevel.HEADING_1;
+    add(new D.Paragraph({heading:level,pageBreakBefore:!!pageBreak,spacing:{before:isH1?240:180,after:isH1?140:90},keepNext:true,children:[new D.TextRun({text:String(text||'').trim(),font:'黑体',size:isH1?32:22,bold:true,color:'141625'})]}));
+  };
+  const addBody=text=>{if(text&&text.trim())add(new D.Paragraph({spacing:{after:100,line:360},children:[new D.TextRun({text:text.trim(),font:'宋体',size:21,color:'141625'})]}));};
+  const addNote=text=>{if(text&&text.trim())add(new D.Paragraph({spacing:{after:100,line:300},children:[new D.TextRun({text:text.trim(),font:'宋体',size:17,color:'71778A'})]}));};
+  const walk=el=>{
+    if(!el||el.nodeType!==1)return;
+    const cls=el.classList;
+    if(cls.contains('rp-head')||cls.contains('rp-toc')||cls.contains('rp-foot')||cls.contains('sens-lab'))return;
+    if(el.tagName==='H3'){addHeading(el.textContent,D.HeadingLevel.HEADING_1,h1>0);h1++;return;}
+    if(el.tagName==='H4'){addHeading(el.textContent,D.HeadingLevel.HEADING_3,false);return;}
+    if(cls.contains('chart')){
+      const img=chartImageData(el);
+      if(img)add(new D.Paragraph({alignment:D.AlignmentType.CENTER,keepNext:true,spacing:{before:80,after:40},children:[new D.ImageRun({data:img.data,transformation:{width:img.width,height:img.height}})]}));
+      else addNote('（图表见网页版）');
+      return;
+    }
+    if(cls.contains('figcap')){add(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:140},children:[new D.TextRun({text:el.textContent.trim(),font:'宋体',size:17,color:'71778A'})]}));return;}
+    if(el.tagName==='TABLE'){
+      docxTablesFromDom(el,D).forEach(part=>{
+        if(part.caption)add(new D.Paragraph({spacing:{before:140,after:60},keepNext:true,children:[new D.TextRun({text:part.caption,font:'黑体',size:19,bold:true,color:'141625'})]}));
+        if(part.table)add(part.table);
+      });
+      return;
+    }
+    if(cls.contains('concl')){
+      const h4=el.querySelector('h4');
+      if(h4)add(new D.Paragraph({spacing:{before:140,after:60},keepNext:true,children:[new D.TextRun({text:h4.textContent.trim(),font:'黑体',size:22,bold:true,color:'141625'})]}));
+      el.querySelectorAll('p').forEach(p=>add(docxParaFromNode(p,D,{shading:{fill:'F6EFDD',type:D.ShadingType.CLEAR},spacing:{after:80,line:340}})));
+      const std=el.querySelector('.std');if(std)addNote(std.textContent);
+      return;
+    }
+    if(cls.contains('vcards')){
+      const rows=[...el.querySelectorAll('.vcard')].map(v=>[v.querySelector('.vk')?.textContent.trim()||'',v.querySelector('.vv')?.textContent.trim()||'',v.querySelector('.vb')?.textContent.trim()||'']);
+      add(docxTextTable(D,['评价指标','结果','判断标准'],rows,[4200,2400,2760],true));return;
+    }
+    if(cls.contains('klist')){
+      const rows=[...el.querySelectorAll('.kitem')].map(v=>[v.querySelector('span')?.textContent.trim()||'',v.querySelector('b')?.textContent.trim()||'']);
+      add(docxTextTable(D,['指标','数值'],rows,[3000,6360],true));return;
+    }
+    if(cls.contains('calc')){
+      const h4=el.querySelector('h4');if(h4)addHeading(h4.textContent.trim(),D.HeadingLevel.HEADING_3,false);
+      const rows=[...el.querySelectorAll('.fx')].map(f=>[f.querySelector('.ft')?.textContent.trim()||'',f.querySelector('.fm')?.textContent.trim()||'']);
+      if(rows.length)add(docxTextTable(D,['项目','计算式与代入数值'],rows,[2800,6560],true));
+      const nt=el.querySelector('.note');if(nt)addNote(nt.textContent);
+      return;
+    }
+    if(cls.contains('insight')){
+      [...el.querySelectorAll('.insight-item')].forEach(it=>{
+        const lvl=it.classList.contains('watch')?'FBE9EB':it.classList.contains('key')?'EEF0F8':'F3F1EC';
+        const title=it.querySelector('b')?.textContent.trim()||'';
+        const text=it.querySelector('span')?.textContent.trim()||'';
+        add(new D.Paragraph({shading:{fill:lvl,type:D.ShadingType.CLEAR},spacing:{after:60,line:300},children:[
+          new D.TextRun({text:title+'：',font:'宋体',size:19,bold:true,color:'141625'}),
+          new D.TextRun({text,font:'宋体',size:19,color:'3C4152'}),
+        ]}));
+      });
+      return;
+    }
+    if(cls.contains('rp-note')){addNote(el.textContent);return;}
+    if(cls.contains('rp-h3')){add(new D.Paragraph({spacing:{before:160,after:60},keepNext:true,children:[new D.TextRun({text:el.textContent.trim(),font:'黑体',size:22,bold:true,color:'3C4152'})]}));return;}
+    if(cls.contains('rp-p')){add(docxParaFromNode(el,D));return;}
+    if(cls.contains('rp-sec')||cls.contains('tscroll')){[...el.children].forEach(walk);return;}
+    if(el.children.length){[...el.children].forEach(walk);}
+    else addBody(el.textContent);
+  };
+  [...root.children].forEach(walk);
+  return out;
+}
+async function exportDocx(){
+  const D=docxLib();
+  if(!D)return false;
+  if(!ensureReport())return;
+  const s=lastReportState;
+  renderCharts(s,lastM);
+  const body=docxBodyChildren(document.getElementById('reportRoot'),D,s);
+  const page={size:{width:11906,height:16838},margin:{top:1273,right:1273,bottom:1273,left:1273}};
+  const header=new D.Header({children:[new D.Paragraph({alignment:D.AlignmentType.RIGHT,children:[new D.TextRun({text:(s.projName||'')+' · 财务评价专章',font:'宋体',size:16,color:'71778A'})]})]});
+  const footer=new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[
+    new D.TextRun({text:'第 ',font:'宋体',size:16,color:'71778A'}),
+    new D.TextRun({children:[D.PageNumber.CURRENT],font:'宋体',size:16,color:'71778A'}),
+    new D.TextRun({text:' 页 / 共 ',font:'宋体',size:16,color:'71778A'}),
+    new D.TextRun({children:[D.PageNumber.TOTAL_PAGES],font:'宋体',size:16,color:'71778A'}),
+    new D.TextRun({text:' 页',font:'宋体',size:16,color:'71778A'}),
+  ]})]});
+  const doc=new D.Document({
+    styles:{
+      default:{document:{run:{font:'宋体',size:21,color:'141625'},paragraph:{spacing:{line:360,after:100}}}},
+      paragraphStyles:[
+        {id:'Heading1',name:'Heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'黑体',size:32,bold:true,color:'141625'},paragraph:{spacing:{before:240,after:140},outlineLevel:0,keepNext:true}},
+        {id:'Heading2',name:'Heading 2',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'黑体',size:26,bold:true,color:'141625'},paragraph:{spacing:{before:200,after:100},outlineLevel:1,keepNext:true}},
+        {id:'Heading3',name:'Heading 3',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'黑体',size:22,bold:true,color:'3C4152'},paragraph:{spacing:{before:160,after:80},outlineLevel:2,keepNext:true}},
+      ],
+    },
+    sections:[
+      {properties:{page},children:docxCoverChildren(s,D)},
+      {properties:{page:Object.assign({},page,{pageNumbers:{start:1}})},headers:{default:header},footers:{default:footer},children:[...docxTocChildren(D),...body]},
+    ],
+  });
+  const blob=await D.Packer.toBlob(doc);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=docFileName(s);
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('已导出 Word（.docx，'+(blob.size/1024).toFixed(0)+' KB，含目录/页码/图表）');
+  return true;
+}
+async function exportInteractiveHtml(){
+  if(!ensureReport())return;
+  const s=lastReportState;
+  toast('正在打包交互式报告…');
+  const reportRoot=document.getElementById('reportRoot');
+  const rawReport=reportRoot?reportRoot.innerHTML:'';
+  const tmp=document.createElement('div');tmp.innerHTML=rawReport;tmp.querySelectorAll('script').forEach(n=>n.remove());
+  tmp.querySelectorAll('.chart').forEach(el=>{el.innerHTML='';el.removeAttribute('_echarts_instance_');});
+  tmp.querySelectorAll('#sensLab').forEach(l=>{delete l.dataset.bound;l.removeAttribute('data-bound');});
+  const reportHtml=tmp.innerHTML;
+  const css=[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
+  const scripts=[...document.querySelectorAll('script')];
+  const engineSrc=scripts.map(s=>s.textContent||'').find(t=>t.includes('function computeModel'))||'';
+  const chartSrc=scripts.map(s=>s.textContent||'').find(t=>t.includes('function renderCharts'))||'';
+  let analysisSrc='';
+  try{analysisSrc=await (await fetch('analysis.js')).text();}catch(e){}
+  let echartsSrc='';
+  try{const r=await fetch('https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js');if(r.ok)echartsSrc=await r.text();}catch(e){}
+  if(!engineSrc||!chartSrc){toast('导出失败：未找到计算或图表脚本');return;}
+  const safeScript=s=>String(s||'').replace(/<\/script/gi,'<\\/script');
+  const stateJson=JSON.stringify(s).replace(/</g,'\\u003c');
+  const title=String(s.projName||'项目').replace(/[<>]/g,'');
+  const html=`<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title} · 交互式财务评价报告</title>
+<style>${css}
+body{background:#f0efea;margin:0}
+.html-tools{position:sticky;top:0;z-index:100;max-width:1240px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#141625;color:#fff;border-radius:0 0 14px 14px;box-shadow:0 4px 22px rgba(10,12,20,.3);font-family:var(--sans)}
+.html-tools .tag{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:#d9b45c}
+.html-tools .name{font-weight:700;font-size:14px}
+.html-tools button{border:0;border-radius:100px;padding:8px 16px;background:#d9b45c;color:#1b1d29;font-weight:700;font-size:13px;cursor:pointer}
+.html-tools button:hover{background:#e3c470}
+.html-hint{max-width:1240px;margin:12px auto 0;padding:0 24px;color:#71778a;font-size:12px;line-height:1.7}
+@media print{.html-tools{display:none!important}.html-hint{display:none!important}}
+</style></head>
+<body>
+<div class="html-tools"><div><div class="tag">INTERACTIVE REPORT</div><div class="name">${title} · 财务评价专章</div></div><button onclick="window.print()">打印 / 另存为 PDF</button></div>
+<div class="wrap"><div class="report" id="reportRoot">${reportHtml}</div></div>
+<div class="html-hint">本文件为交互式报告：图表支持悬浮、缩放和保存图片；敏感性章节的滑杆可实时重算。数据基于导出时的参数，不进行外推预测。</div>
+${echartsSrc?`<script>${safeScript(echartsSrc)}<\/script>`:`<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"><\/script>`}
+<script>${safeScript(engineSrc)}<\/script>
+${analysisSrc?`<script>${safeScript(analysisSrc)}<\/script>`:''}
+<script>${safeScript(chartSrc)}<\/script>
+<script>
+  let state=${stateJson};
+  let lastM=null;
+  try{
+    const M=computeModel(state);
+    if(typeof analyzeModel==='function')M.analysis=analyzeModel(state,M,judge(state,M));
+    else M.analysis={structures:{cost:[
+      {name:'原材料',value:M.matY[M.normalY]},{name:'燃料动力',value:M.fuelY[M.normalY]},
+      {name:'工资福利',value:M.wagY[M.normalY]},{name:'修理费',value:M.repY[M.normalY]},
+      {name:'其他费用',value:M.othY[M.normalY]},{name:'折旧费',value:M.depTotY[M.normalY]},
+      {name:'摊销费',value:M.amortY[M.normalY]},{name:'利息支出',value:M.intTotalY[M.normalY]}
+    ]}};
+    lastM=M;
+    window.addEventListener('load',()=>{try{renderCharts(state,M);initSensLab(state,M);}catch(e){console.error(e);}});
+  }catch(e){console.error(e);}
+<\/script>
+</body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fileStem(s)+'_交互式报告.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('已导出交互式 HTML（'+(blob.size/1024/1024).toFixed(1)+' MB'+(echartsSrc?'，图表库已内嵌':'，图表库需联网')+'）');
+}
+function exportWord(){
+  if(docxLib()){
+    exportDocx().catch(e=>{console.error(e);toast('Word 导出失败：'+(e&&e.message||e));});
+    return;
+  }
+  if(!ensureReport())return;
+  const cloneR=document.getElementById('reportRoot').cloneNode(true);
+  cloneR.querySelectorAll('.chart').forEach(el=>{
+    const src=document.getElementById(el.id);
+    const inst=src&&typeof echarts!=='undefined'?echarts.getInstanceByDom(src):null;
+    if(inst){
+      const img=document.createElement('img');
+      img.src=inst.getDataURL({pixelRatio:2,backgroundColor:'#fff'});
+      img.style.cssText='width:100%;max-width:680px';
+      el.replaceWith(img);
+    }else{el.remove();}
+  });
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${fileStem()}</title>
+  <style>body{font-family:"Noto Serif SC","SimSun",serif;color:#141625;font-size:11pt}
+  h1{font-size:20pt}h3{font-size:14pt;border-left:4px solid #2f4bd7;padding-left:10px;margin-top:24px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:9pt}
+  caption{font-weight:700;text-align:left;padding:6px 0;font-size:10.5pt}
+  th,td{border:1px solid #b9bdce;padding:4px 7px;text-align:right}
+  th.l,td.l{text-align:left}th{background:#eef0f8}
+  .klist,.vcards{margin:10px 0}.kitem,.vcard{display:inline-block;border:1px solid #d9dbe6;padding:8px 12px;margin:4px;min-width:180px}
+  .concl{border:1px solid #2f4bd7;padding:12px 16px;margin:14px 0}
+  .rp-note{font-size:9pt;color:#555}
+  </style></head><body>${cloneR.innerHTML}</body></html>`;
+  const blob=new Blob(['﻿'+html],{type:'application/msword'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=fileStem()+'.doc';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast('已导出 Word（.doc，兼容格式；docx 组件未加载）');
+}
+
+/* ================= 附录：计算过程详解 ================= */
+function calcAppendix(s,M){
+  const nB=s.buildYears,nO=s.opYears;
+  const half=s.buildIntMode==='half'?0.5:1;
+  const fx=(t,m,tot)=>`<div class="fx${tot?' tot':''}"><span class="ft">${t}</span><span class="fm">${m}</span></div>`;
+  const B=[];
+  const ny=M.normalY, yl=i=>'运营期第 '+(i+1)+' 年（第 '+(nB+i+1)+' 年）';
+
+  /* 1 建设投资 */
+  let h=`<div class="calc"><h4><span class="no">01</span>建设投资（附表 1）</h4>`;
+  M.eng.forEach(e=>{
+    const it=s.engItems.find(x=>x.name===e.name)||{};
+    h+=fx(e.name+' · 建筑工程费',`${it.qty} m² × ${it.price} 元/m² ÷ 10,000 = <b>${f2(e.build)} 万元</b>`);
+    h+=fx(e.name+' · 安装工程费',`${f2(e.equip)} × (1 − ${pc(s.freightRate,0)}) × ${pc(s.instRate,0)} = <b>${f2(e.inst)} 万元</b>`);
+  });
+  h+=fx('工程费用小计',`${f2(M.gBuild)} + ${f2(M.gEquip)} + ${f2(M.gInst)} = <b>${f2(M.gEng)} 万元</b>`);
+  h+=fx('其他费用小计',`土地 ${f2(M.land)} + 开办费 ${f2(M.startup)} + 专利技术 ${f2(M.patent)} = <b>${f2(M.gOther)} 万元</b>`);
+  h+=fx('基本预备费',`(${f2(M.gEng)} + ${f2(M.gOther)}) × ${pc(s.basicRsv,0)} = <b>${f2(M.rsvBasic)} 万元</b>`);
+  h+=fx('涨价预备费',`${f2(M.gEng)} × ${pc(s.priceRsv,0)} = <b>${f2(M.rsvPrice)} 万元</b>`);
+  h+=fx('建设投资合计',`${f2(M.gEng)} + ${f2(M.gOther)} + ${f2(M.rsv)} = <b>${f2(M.conInv)} 万元</b>`,1);
+  h+=`</div>`;B.push(h);
+
+  /* 2 建设期利息 */
+  h=`<div class="calc"><h4><span class="no">02</span>建设期利息（附表 4，${INT_LBL[s.buildIntMode]}）</h4>`;
+  let cumPrev=0;
+  for(let t=0;t<nB;t++){
+    const base=M.loanY[t]*half+cumPrev;
+    h+=fx(`第 ${t+1} 年利息`,`(${f2(M.loanY[t])}${half===0.5?' × 50%':''} + ${f2(cumPrev)}) × ${pc(s.ltRate,2)} = <b>${f2(M.intBuild[t])} 万元</b>`);
+    cumPrev+=M.loanY[t]+M.intBuild[t];
+  }
+  h+=fx('建设期利息合计',`<b>${f2(M.buildIntTotal)} 万元</b>　→ 计入固定资产原值（建筑工程部分）`,1);
+  h+=`<div class="note">括号内第二项为以前年度借款本息累计；${half===0.5?'当年借款按一半本金计息。':'当年借款按全年计息（评估文档口径）。'}</div></div>`;B.push(h);
+
+  /* 3 折旧摊销 */
+  h=`<div class="calc"><h4><span class="no">03</span>折旧与摊销（附表 5、6）</h4>`;
+  h+=fx('建筑工程原值',`工程建筑费 ${f2(M.gBuild)} + 预备费 ${f2(M.rsv)} + 建设期利息 ${f2(M.buildIntTotal)} = <b>${f2(M.fa1_0)} 万元</b>`);
+  h+=fx('建筑工程年折旧',`${f2(M.fa1_0)} × (1 − ${pc(s.salvageRate,0)}) ÷ ${s.depYears} 年 = <b>${f2(M.dep1Y[0])} 万元/年</b>（前 ${Math.min(s.depYears,nO)} 个运营年）`);
+  h+=fx('设备工程原值',`设备 ${f2(M.gEquip)} + 安装 ${f2(M.gInst)} = <b>${f2(M.fa2_0)} 万元</b>`);
+  h+=fx('设备工程年折旧',`${f2(M.fa2_0)} × (1 − ${pc(s.salvageRate,0)}) ÷ ${s.depYears} 年 = <b>${f2(M.dep2Y[0])} 万元/年</b>`);
+  h+=fx('土地征用费年折旧',`${f2(M.fa3_0)} ÷ ${s.landDepYears} 年 = <b>${f2(M.dep3Y[0])} 万元/年</b>（无残值）`);
+  h+=fx('折旧费合计（折旧期内）',`${f2(M.dep1Y[0])} + ${f2(M.dep2Y[0])} + ${f2(M.dep3Y[0])} = <b>${f2(M.depTotY[0])} 万元/年</b>`,1);
+  h+=fx('专利及技术年摊销',`${f2(M.patent)} ÷ ${s.patentAmortYears} 年 = <b>${f2(M.amPatent)} 万元/年</b>`);
+  h+=fx('开办费年摊销',`${f2(M.startup)} ÷ ${s.startupAmortYears} 年 = <b>${f2(M.amStartup)} 万元/年</b>`);
+  h+=`<div class="note">折旧/摊销年限届满后，对应年折旧（摊销）额为 0；修理费以「当年折旧费」为基数，随之变化。</div></div>`;B.push(h);
+
+  /* 4 经营成本（第1个运营年） */
+  const y0=0,l0=s.load[0];
+  h=`<div class="calc"><h4><span class="no">04</span>经营成本（附表 7，以${yl(y0)}为例，负荷 ${pc(l0,0)}）</h4>`;
+  h+=fx('原材料',`${s.designQty} 吨 × ${s.unitMat} 万元/吨 × ${pc(l0,0)} = <b>${f2(M.matY[0])} 万元</b>`);
+  h+=fx('燃料及动力',`${s.designQty} × ${s.unitFuel} × ${pc(l0,0)} = <b>${f2(M.fuelY[0])} 万元</b>`);
+  h+=fx('工资及福利费',`${s.staff} 人 × ${s.wage} 万元 × ${pc(l0,0)} = <b>${f2(M.wagY[0])} 万元</b>`);
+  h+=fx('修理费',`当年折旧 ${f2(M.depTotY[0])} × ${pc(s.repairRate,0)} = <b>${f2(M.repY[0])} 万元</b>`);
+  h+=fx('其他费用',`(${f2(M.matY[0])} + ${f2(M.fuelY[0])} + ${f2(M.wagY[0])} + ${f2(M.repY[0])}) × ${pc(s.otherRate,0)} = <b>${f2(M.othY[0])} 万元</b>`);
+  h+=fx('经营成本小计',`${f2(M.matY[0])} + ${f2(M.fuelY[0])} + ${f2(M.wagY[0])} + ${f2(M.repY[0])} + ${f2(M.othY[0])} = <b>${f2(M.opcY[0])} 万元</b>`,1);
+  h+=fx('总成本费用',`经营成本 ${f2(M.opcY[0])} + 折旧 ${f2(M.depTotY[0])} + 摊销 ${f2(M.amortY[0])} + 利息 ${f2(M.intTotalY[0])} = <b>${f2(M.totCostY[0])} 万元</b>`,1);
+  h+=`<div class="note">其余运营年算法相同，仅负荷与当年折旧、利息不同，结果见附表 7。</div></div>`;B.push(h);
+
+  /* 5 收入税金 */
+  h=`<div class="calc"><h4><span class="no">05</span>营业收入、税金及附加（附表 8，以${yl(y0)}为例）</h4>`;
+  if(M.isCurrent){
+    h+=fx('不含税营业收入',`含税销售额 ${f2(M.grossRevY[0])} ÷ (1 + ${pc(s.vatRate,0)}) = <b>${f2(M.revY[0])} 万元</b>`);
+    h+=fx('应缴增值税',`销项或按征收率计算税额 ${f2(M.outputVatY[0])} − 可抵扣进项 ${f2(M.inputVatY[0])}（不足抵扣结转） = <b>${f2(M.vatY[0])} 万元</b>`);
+  }else{
+    h+=fx('营业收入',`${s.designQty} 吨 × ${s.price} 万元/吨 × ${pc(l0,0)} = <b>${f2(M.revY[0])} 万元</b>`);
+    h+=fx('增值税',`max(${f2(M.revY[0])} − ${f2(M.matY[0])} − ${f2(M.fuelY[0])}, 0) × ${pc(s.vatRate,0)} ÷ (1 + ${pc(s.vatRate,0)}) = <b>${f2(M.vatY[0])} 万元</b>`);
+  }
+  h+=fx('城市维护建设税',`${f2(M.vatY[0])} × ${pc(s.cityTax,0)} = <b>${f2(M.cityY[0])} 万元</b>`);
+  h+=fx('教育费附加',`${f2(M.vatY[0])} × ${pc(s.eduTax,0)} = <b>${f2(M.eduY[0])} 万元</b>`);
+  h+=fx('税金及附加合计',`${M.isCurrent?'':f2(M.vatY[0])+' + '}${f2(M.cityY[0])} + ${f2(M.eduY[0])} = <b>${f2(M.taxSurY[0])} 万元</b>`,1);
+  h+=`</div>`;B.push(h);
+
+  /* 6 流动资金 */
+  h=`<div class="calc"><h4><span class="no">06</span>流动资金（附表 2，分项详细法，以${yl(y0)}为例）</h4>`;
+  const tn=M.tn;
+  h+=fx('周转次数',`应收账款 360 ÷ ${s.dAr} = ${f2(tn.ar)} 次；存货类与现金同理（360 ÷ 周转天数）`);
+  h+=fx('应收账款',`经营成本 ${f2(M.opcY[0])} ÷ ${f2(tn.ar)} = <b>${f2(M.arY[0])} 万元</b>`);
+  h+=fx('存货',`原材料 ${f2(M.invMatY[0])} + 燃料 ${f2(M.invFuelY[0])} + 在产品 ${f2(M.invWipY[0])} + 产成品 ${f2(M.invFgY[0])} = <b>${f2(M.invY2[0])} 万元</b>`);
+  h+=fx('现金',`(工资 ${f2(M.wagY[0])} + 其他费用 ${f2(M.othY[0])}) ÷ ${f2(tn.cash)} = <b>${f2(M.cashY[0])} 万元</b>`);
+  h+=fx('应付账款（流动负债）',`(原材料 ${f2(M.matY[0])} + 燃料 ${f2(M.fuelY[0])}) ÷ ${f2(tn.ap)} = <b>${f2(M.apY[0])} 万元</b>`);
+  h+=fx('流动资金',`流动资产 ${f2(M.caY[0])} − 流动负债 ${f2(M.apY[0])} = <b>${f2(M.wcY[0])} 万元</b>`,1);
+  h+=fx('流动资金借款及利息',`本年增额 ${f2(M.wcIncY[0])} × ${pc(s.wcLoanRatio,0)} = ${f2(M.wcLoanY[0])} 万元；利息 = 流动资金 ${f2(M.wcY[0])} × ${pc(s.wcLoanRatio,0)} × ${pc(s.wcLoanRate,2)} = <b>${f2(M.wcIntY[0])} 万元</b>`);
+  h+=`</div>`;B.push(h);
+
+  /* 7 还本付息 */
+  h=`<div class="calc"><h4><span class="no">07</span>借款还本付息（附表 3，${REPAY_LBL[s.repayMethod]}）</h4>`;
+  h+=fx('投产期初借款本息和',`各年借款 ${M.loanY.map(v=>f2(v)).join(' + ')} + 建设期利息 ${f2(M.buildIntTotal)} = <b>${f2(M.ltP0)} 万元</b>`);
+  if(s.repayMethod==='equalInstallment'){
+    h+=fx('每期偿还额（年金）',`A = ${f2(M.ltP0)} × ${pc(s.ltRate,2)} × (1+${pc(s.ltRate,2)})^${M.nRep} ÷ [(1+${pc(s.ltRate,2)})^${M.nRep} − 1] = <b>${f2(M.annuity)} 万元</b>`,1);
+  }else{
+    h+=fx('每年偿还本金',`${f2(M.ltP0)} ÷ ${M.nRep} 年 = <b>${f2(M.ltP0/M.nRep)} 万元/年</b>`,1);
+  }
+  let bal=M.ltP0;
+  for(let y=0;y<Math.min(M.nRep,nO);y++){
+    h+=fx(`${yl(y)}`,`利息 = ${f2(bal)} × ${pc(s.ltRate,2)} = ${f2(M.ltIntY[y])}；还本 = ${f2(M.repayY[y])}；年末余额 = <b>${f2(M.ltBalY[y])} 万元</b>`);
+    bal=M.ltBalY[y];
+  }
+  h+=`</div>`;B.push(h);
+
+  /* 8 损益 */
+  h=`<div class="calc"><h4><span class="no">08</span>利润与分配（附表 10，以${yl(y0)}为例）</h4>`;
+  h+=fx('利润总额',`营业收入 ${f2(M.revY[0])} − 税金及附加 ${f2(M.taxSurY[0])} − 总成本 ${f2(M.totCostY[0])} = <b>${f2(M.profitY[0])} 万元</b>`);
+  h+=fx('所得税',`max(利润总额, 0) × ${pc(M.incomeTaxRates[0],2)} = <b>${f2(M.incTaxY[0])} 万元</b>`);
+  h+=fx('税后利润',`${f2(M.profitY[0])} − ${f2(M.incTaxY[0])} = <b>${f2(M.netProfitY[0])} 万元</b>`,1);
+  h+=fx('盈余公积金 / 公益金',`净利润 × ${pc(s.surplusR,0)} = ${f2(M.surplusY[0])}；净利润 × ${pc(s.welfareR,0)} = ${f2(M.welfareY[0])}`);
+  h+=`</div>`;B.push(h);
+
+  /* 9 现金流指标 */
+  const i0=s.i0,P=nB+nO+1;
+  const dc=M.aiCf.map((v,t)=>v/Math.pow(1+i0,t));
+  const dcum=[];dc.reduce((a,v,i)=>(dcum[i]=a+v,a+v),0);
+  const cumAt=a=>{const r=[];a.reduce((x,v,i)=>(r[i]=x+v,x+v),0);return r;};
+  const cumS=cumAt(M.aiCf);
+  const tIdx=(cum,cf)=>cum.findIndex((v,t)=>t>0&&v>=0&&cf[t]>0&&(!M.isCurrent||cum[t-1]<0));
+  const offset=M.isCurrent?1:0;
+  h=`<div class="calc"><h4><span class="no">09</span>盈利能力指标（附表 11-1）</h4>`;
+  h+=fx('财务净现值 NPV',`NPV = Σ CFₜ ÷ (1 + ${pc(i0,0)})ᵗ，t = 0 … ${P-1} = <b>${f2(M.ind.ai.npv)} 万元</b>（各年折现值见附表 11-1「折现净现金流量」行）`);
+  h+=fx('内部收益率 IRR',`使 NPV(IRR) = Σ CFₜ ÷ (1+IRR)ᵗ = 0 的折现率，经迭代求解得 <b>${pc(M.ind.ai.irr)}</b>`);
+  if(isFinite(M.ind.ai.pt)){
+    const T=tIdx(cumS,M.aiCf);
+    h+=fx('静态投资回收期 Pt',`累计净现金流量在第 ${T} 个时点转正（时点自第 0 年起计）：Pt = ${T-offset} + |${f2(cumS[T-1])}| ÷ ${f2(M.aiCf[T])} = <b>${f2(M.ind.ai.pt)} 年</b>（含建设期）`);
+  }else h+=fx('静态投资回收期 Pt','计算期内累计净现金流量未转正，<b>未回收</b>');
+  if(isFinite(M.ind.ai.pd)){
+    const T=tIdx(dcum,dc);
+    h+=fx('动态投资回收期 PD',`累计折现净现金流量在第 ${T} 个时点转正：PD = ${T-offset} + |${f2(dcum[T-1])}| ÷ ${f2(dc[T])} = <b>${f2(M.ind.ai.pd)} 年</b>（含建设期，i₀=${pc(i0,0)}）`);
+  }else h+=fx('动态投资回收期 PD','计算期内累计折现净现金流量未转正，<b>未回收</b>');
+  if(s.caliber==='legacy'){
+    h+=fx('总投资收益率（正常年）',`${yl(ny)}利润总额 ${f2(M.profitY[ny])} ÷ 总投资 ${f2(M.totalInv)} = <b>${pc(M.roiPre)}</b>`);
+  }else{
+    h+=fx('总投资收益率 ROI（正常年）',`(${yl(ny)}利润总额 ${f2(M.profitY[ny])} + 利息支出 ${f2(M.intTotalY[ny])}) ÷ 总投资 ${f2(M.totalInv)} = <b>${pc(M.roiPre)}</b>`);
+  }
+  h+=fx('资本金净利润率（正常年）',`净利润 ${f2(M.netProfitY[ny])} ÷ 资本金 ${f2(M.capTotal)} = <b>${pc(M.roeNormal)}</b>`);
+  h+=`<div class="note">融资前末年回收固定资产 ${f2(M.aiSalvageFA)} 万元、流动资金 ${f2(M.aiWcRecover)} 万元。${s.caliber==='legacy'?'本表建设投资含建设期利息（原表口径）。':'预计固定资产净回收额按相应口径的期末账面价值乘录入比例计算，融资前账面价值不含建设期利息。'}</div></div>`;B.push(h);
+
+  /* 10 偿债指标 */
+  const fint=a=>a.filter(isFinite);
+  const minIcr=Math.min(...fint(M.icrY)),minDscr=Math.min(...fint(M.dscrY));
+  const yI=M.icrY.indexOf(minIcr),yD=M.dscrY.indexOf(minDscr);
+  h=`<div class="calc"><h4><span class="no">10</span>清偿能力指标（最低值所在年份）</h4>`;
+  if(yI<0)h+=fx('利息备付率 ICR','不适用');
+  else h+=fx(`利息备付率 ICR（${yl(yI)}）`,`(利润总额 ${f2(M.profitY[yI])} + 利息 ${f2(M.intTotalY[yI])}) ÷ ${f2(M.intTotalY[yI])} = <b>${f2(minIcr)}</b>`);
+  if(yD<0)h+=fx('偿债备付率 DSCR','不适用');
+  else h+=fx(`偿债备付率 DSCR（${yl(yD)}）`,`(净利润 ${f2(M.netProfitY[yD])} + 折旧 ${f2(M.depTotY[yD])} + 摊销 ${f2(M.amortY[yD])} + 利息 ${f2(M.intTotalY[yD])}) ÷ 应还本息 ${f2(M.debtServiceY[yD])} = <b>${f2(minDscr)}</b>`);
+  h+=fx('资产负债率（最大值）',`(流动负债 + 长期借款) ÷ 资产总计 = <b>${pc(Math.max(...M.bs.map(b=>b.debtRatio)))}</b>（见附表 12）`);
+  h+=`</div>`;B.push(h);
+
+  /* 11 盈亏平衡 */
+  h=`<div class="calc"><h4><span class="no">11</span>盈亏平衡分析（正常年，${yl(ny)}）</h4>`;
+  h+=fx('固定成本',`修理费 ${f2(M.repY[ny])}${M.isCurrent?' + 按修理费计提的其他费用 '+f2(M.repY[ny]*s.otherRate):''} + 折旧 ${f2(M.depTotY[ny])} + 摊销 ${f2(M.amortY[ny])} + 利息 ${f2(M.intTotalY[ny])} = <b>${f2(M.fixCostY[ny])} 万元</b>`);
+  if(isFinite(M.bepNormal)){
+    h+=fx('BEP（生产能力利用率）',`${f2(M.fixCostY[ny])} ÷ ${M.isCurrent?'满产贡献额':'该年贡献额'} ${f2(M.bepContributionY[ny])} = <b>${pc(M.bepNormal)}</b>`,1);
+    h+=fx('保本产量 / 保本收入',`保本产量 ${f2(M.bepQtyNormal)} 吨，保本营业收入 ${f2(M.bepRevNormal)} 万元。`);
+  }else h+=fx('BEP（生产能力利用率）','无正贡献额，无法计算。');
+  h+=`</div>`;B.push(h);
+
+  /* 12 盈余资金 */
+  h=`<div class="calc"><h4><span class="no">12</span>财务生存能力（附表 9，以${yl(y0)}为例）</h4>`;
+  h+=fx('盈余资金',`资金来源 ${f2(M.srcY[0])} − 资金运用 ${f2(M.useY[0])} = <b>${f2(M.surplusY2[0])} 万元</b>。当年归还本金 ${f2(M.debtPrincipalY[0])} 万元，详见附表 9。`);
+  h+=fx('累计盈余资金',`逐年累加；计算期内最小值 = <b>${f2(Math.min(...M.cumSurplusY))} 万元</b>（要求各年 ≥ 0）`,1);
+  h+=`</div>`;B.push(h);
+
+  return B.join('');
+}
+
+/* ================= 启动 ================= */
+renderForm();
+refreshScenSel();
+generate();
+showTab('input');
+window.addEventListener('load',()=>{
+  if(typeof echarts==='undefined')return;
+  if(lastM&&!pgR.hidden)renderCharts(lastReportState,lastM);
+});
+</script>
+</body>
+</html>
