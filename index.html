@@ -69,13 +69,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .quicknav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
 .quicknav button{border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:100px;padding:5px 14px;font-size:12.5px;transition:border-color .15s,color .15s}
 .quicknav button:hover{border-color:var(--accent);color:var(--accent)}
-.scenbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.scenbar .scen-title{font-size:13px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.scenbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-bottom:18px}
+.scenbar .scen-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.scenbar .scen-group + .scen-group{border-left:1px solid var(--line);padding-left:18px}
+.scenbar .scen-title{font-size:13px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:8px;white-space:nowrap}
 .scenbar .scen-title::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.scenbar .scen-count{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:100px;padding:1px 8px}
+.scenbar .scen-tag{font-size:10.5px;font-weight:600;color:var(--mut);background:var(--line2);border-radius:100px;padding:1px 7px}
 .scenbar select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13.5px;font-family:var(--sans);background:var(--paper);color:var(--ink);min-width:200px;max-width:320px}
 .scenbar .sp{flex:1}
 .scenbar .btn{padding:7px 16px;font-size:13px}
-.scenbar .scen-hint{font-size:12px;color:var(--mut);width:100%}
+.scenbar .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.scenbar .linkbtn{font-size:12.5px;white-space:nowrap}
+.scenbar .scen-hint{font-size:12px;color:var(--mut);width:100%;line-height:1.7}
+@media(max-width:900px){.scenbar .scen-group + .scen-group{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:10px;width:100%}}
 .fsec{background:var(--paper);border:1px solid var(--line);border-radius:16px;margin-bottom:18px;overflow:hidden;transition:border-color .2s,box-shadow .2s;scroll-margin-top:80px}
 .fsec:hover{border-color:#d5d0c4;box-shadow:0 4px 18px rgba(20,22,37,.05)}
 [data-theme="dark"] .fsec:hover{border-color:#3a4056}
@@ -99,7 +106,7 @@ table.eng input:hover{border-color:var(--line)}
 table.eng input:focus{border-color:var(--accent);background:var(--paper)}
 table.eng td input.nm{font-family:var(--sans);text-align:left}
 .engfoot{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 18px;gap:12px;flex-wrap:wrap}
-.linkbtn{border:0;background:none;color:var(--accent);font-size:13.5px;font-weight:600;padding:6px 4px}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:13.5px;font-weight:600;padding:6px 4px;text-decoration:none}
 .linkbtn:hover{text-decoration:underline}
 .delrow{border:0;background:none;color:var(--mut);font-size:16px;line-height:1;padding:4px 8px;border-radius:6px}
 .delrow:hover{color:var(--bad);background:var(--bad-bg)}
@@ -494,19 +501,22 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
       <p>参照《建设项目经济评价方法与参数》（第三版）报表体系设置参数，计算期（建设期/运营期）、还款方式、计息口径均可自定义。修改参数后点击「生成评估报告」，自动完成全套报表编制、盈利能力 / 清偿能力 / 财务生存能力分析与可行性判断，报告支持导出 PDF / Excel / Word。数据仅保存在您当前浏览器中。</p>
     </div>
     <div class="welcome"><div><span class="eyebrow">第一次使用</span><h2>从一个案例，开始理解项目财务。</h2><p>载入教学数据 → 修改含税单价 → 生成报告。参数均可修改，结果随之重新计算。</p></div><div class="welcome-actions"><button class="btn btn-primary" data-action="demo">一键体验教学案例</button><button class="btn btn-line" data-go="guide">查看使用方法 →</button></div></div>
-    <div class="trial-state"><span id="caseContext"></span><span id="saveStatus" role="status">数据保存在当前浏览器</span></div>
+    <div class="trial-state"><span id="caseContext"></span><span id="saveStatus" role="status">数据保存在当前浏览器</span><a class="feedback-link" href="https://pll2rq73co.feishu.cn/share/base/shrcnq0uo4vK0KFAc1tg6xL2m2c" target="_blank" rel="noopener">反馈问卷 ↗</a></div>
     <div class="error-summary" id="errorSummary" role="alert" tabindex="-1" hidden></div>
     <div class="scenbar">
-      <span class="scen-title">方案管理</span>
-      <select id="scenSel"><option value="">（暂无已保存方案）</option></select>
-      <button class="btn btn-line" id="btnScenLoad" type="button">载入方案</button>
-      <button class="btn btn-line" id="btnScenDel" type="button">删除方案</button>
-      <button class="btn btn-line" id="btnLegacy" type="button">载入原表案例</button>
-      <select id="caseSel"><option value="">课程案例…</option></select>
-      <button class="btn btn-line" id="btnCaseLoad" type="button">载入案例</button>
-      <span class="sp"></span>
-      <button class="btn btn-dark" id="btnScenSave" type="button">保存方案至本浏览器</button>
-      <span class="scen-hint">同一项目可保存多个版本（如不同融资结构、不同负荷方案），并可在「方案对比」页两两对比。</span>
+      <div class="scen-group">
+        <span class="scen-title">我的方案 <span class="scen-count" id="scenCount">0</span></span>
+        <select id="scenSel"><option value="">（还没有保存的方案）</option></select>
+        <button class="btn btn-line" id="btnScenLoad" type="button" title="把选中的已保存方案载入为当前参数">载入方案</button>
+        <button class="btn btn-line" id="btnScenDel" type="button" title="只删除存档，不影响当前参数">删除方案</button>
+        <button class="btn btn-dark" id="btnScenSave" type="button" title="把当前参数保存为一个可对比的版本">保存当前为方案</button>
+      </div>
+      <div class="scen-group">
+        <span class="scen-title">内置案例 <span class="scen-tag">只读</span></span>
+        <select id="caseSel" title="内置案例是只读起点，载入后可另存为“我的方案”"><option value="">课程案例…</option></select>
+        <button class="btn btn-line" id="btnCaseLoad" type="button" title="载入后替换当前参数，可再另存为我的方案">载入案例</button>
+      </div>
+      <span class="scen-hint">“我的方案”是你保存的多个版本，可载入、删除并在「方案对比」页两两比较；“内置案例”是只读起点，载入后可另存为我的方案。自动暂存只保留当前编辑，不会自动生成多版本。案例标签：【真实】来自公开资料，仍需按项目实际核实；【历史口径】仅用于复现旧表；【虚拟】仅用于教学。</span>
     </div>
     <div class="backup-tools"><button class="btn btn-line" id="btnProjectDownload">下载项目备份</button><button class="btn btn-line" id="btnProjectImport">导入项目备份</button><input id="projectFileInput" type="file" accept=".json,application/json" hidden><button class="btn btn-line" id="btnUndo" disabled>撤销上次载入 / 重置</button><button class="btn btn-line" id="btnUndoDelete" disabled>撤销删除方案</button><span>备份文件可以在另一台电脑导入；浏览器保存不自动同步。</span></div>
     <p class="advanced-note">先检查项目、投资、融资和收入成本。折旧、流动资金等高级参数可展开修改，收起时仍按当前值计算。</p>
@@ -632,12 +642,28 @@ const LEGACY_CASE=Object.assign(clone(DEFAULTS),{
 });
 /* 课程案例预设 */
 const CASE_PRESETS={
-  base:{label:'基准案例（现行规范）',data:{}},
-  legacy:{label:'原表案例（2024 Excel）',data:LEGACY_CASE},
-  lowload:{label:'低负荷案例（达产 70%、售价 120）',data:{load:[0.3,0.5,0.7,0.7],price:120}},
-  highdebt:{label:'高负债案例（借款 80%）',data:{loanRatio:[0.8,0.8],wcLoanRatio:0.8}},
+  base:{label:'基准案例（现行规范）',type:'virtual',tag:'虚拟',typeLabel:'虚拟教学案例',data:{}},
+  legacy:{label:'原表案例（2024 Excel）',type:'historical',tag:'历史口径',typeLabel:'历史口径案例（非真实项目）',data:LEGACY_CASE},
+  lowload:{label:'低负荷案例（达产 70%、售价 120）',type:'virtual',tag:'虚拟',typeLabel:'虚拟教学案例',data:{load:[0.3,0.5,0.7,0.7],price:120}},
+  highdebt:{label:'高负债案例（借款 80%）',type:'virtual',tag:'虚拟',typeLabel:'虚拟教学案例',data:{loanRatio:[0.8,0.8],wcLoanRatio:0.8}},
 };
 if(typeof PFE_CASES!=='undefined')Object.assign(CASE_PRESETS,PFE_CASES);
+const DEFAULT_CASE_KEY='waterPlant';
+const CASE_TYPE_LABELS={real:'真实公开案例',mapped:'真实公开案例（资料映射）',historical:'历史口径案例（非真实项目）',virtual:'虚拟教学案例',user:'自行录入'};
+function applyCaseMeta(st,p){
+  st.caseSource=p.source||'';
+  st.caseType=p.type||'virtual';
+  st.caseTag=p.tag||{real:'真实',mapped:'真实·映射',historical:'历史口径',virtual:'虚拟',user:''}[st.caseType]||'';
+  st.caseTypeLabel=p.typeLabel||CASE_TYPE_LABELS[st.caseType]||'';
+  return st;
+}
+function defaultCaseState(){
+  const p=(typeof PFE_CASES!=='undefined')?PFE_CASES[DEFAULT_CASE_KEY]:null;
+  if(p)return applyCaseMeta(normalizeState(Object.assign(clone(DEFAULTS),clone(p.data))),p);
+  const st=normalizeState(clone(DEFAULTS));
+  st.caseType='virtual';st.caseTag='虚拟';st.caseTypeLabel='虚拟教学案例';
+  return st;
+}
 const f2=v=>v==null||!isFinite(v)?'—':(Math.round(v*100)/100).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pc=(v,d=2)=>v==null||!isFinite(v)?'—':(v*100).toFixed(d)+'%';
 const sgn=v=>v<0?'neg':'pos';
@@ -1141,7 +1167,7 @@ const LS_KEY='pfe_state_v1';
 let state=normalizeState(load());
 function load(){
   try{const raw=localStorage.getItem(LS_KEY);if(raw){const o=JSON.parse(raw);if(o&&Array.isArray(o.engItems)&&o.engItems.length&&o.engItems.every(it=>it&&typeof it==='object'))return Object.assign(clone(DEFAULTS),o);}}catch(e){}
-  return clone(DEFAULTS);
+  return defaultCaseState();
 }
 function storageWrite(key,value){
   try{localStorage.setItem(key,JSON.stringify(value));const el=document.getElementById('saveStatus');if(el){el.textContent='已保存至本浏览器 · '+new Date().toLocaleTimeString('zh-CN');el.classList.remove('storage-failed');}return true;}
@@ -1343,7 +1369,11 @@ function refreshScenSel(){
   const sel=document.getElementById('scenSel');const scens=loadScens();
   sel.innerHTML=scens.length
     ?scens.map((sc,i)=>`<option value="${i}">${escapeHtml(sc.name)}（${new Date(sc.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}）</option>`).join('')
-    :'<option value="">（暂无已保存方案）</option>';
+    :'<option value="">（还没有保存的方案）</option>';
+  const load=document.getElementById('btnScenLoad'),del=document.getElementById('btnScenDel'),count=document.getElementById('scenCount');
+  if(load)load.disabled=!scens.length;
+  if(del)del.disabled=!scens.length;
+  if(count)count.textContent=String(scens.length);
 }
 document.getElementById('btnScenSave').onclick=()=>{
   if(inputFailure())return;
@@ -1355,6 +1385,7 @@ document.getElementById('btnScenLoad').onclick=()=>{
   if(!scens.length||isNaN(i)||!scens[i]){toast('请先选择要载入的方案');return;}
   if(!beforeReplace())return;
   state=normalizeState(Object.assign(clone(DEFAULTS),clone(scens[i].data)));userEdited=false;clearIssue();
+  const cs=document.getElementById('caseSel');if(cs)cs.value='';
   save();renderForm();
   if(!showTab('report'))return;
   toast('已载入方案：'+scens[i].name);
@@ -1365,20 +1396,16 @@ document.getElementById('btnScenDel').onclick=()=>{
   const nm=scens[i].name;const previous=clone(scens);scens.splice(i,1);if(!saveScens(scens))return;deletedScens={record:previous[i],index:i};document.getElementById('btnUndoDelete').disabled=false;refreshScenSel();
   toast('已删除方案：'+nm);
 };
-document.getElementById('btnLegacy').onclick=()=>{
-  if(!beforeReplace())return;userEdited=false;clearIssue();
-  state=normalizeState(clone(LEGACY_CASE));save();renderForm();showTab('report');
-  toast('已载入原表案例口径（增值税17%、城建税4%、教育附加2%、全年计息）');
-};
 const caseSel=document.getElementById('caseSel');
-caseSel.innerHTML='<option value="">课程案例…</option>'+Object.entries(CASE_PRESETS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+caseSel.innerHTML='<option value="">课程案例…</option>'+Object.entries(CASE_PRESETS).map(([k,v])=>`<option value="${k}">${v.tag?`【${v.tag}】`:''}${v.label}</option>`).join('');
+if(!localStorage.getItem(LS_KEY)&&CASE_PRESETS[DEFAULT_CASE_KEY])caseSel.value=DEFAULT_CASE_KEY;
 document.getElementById('btnCaseLoad').onclick=()=>{
   const k=caseSel.value;const p=CASE_PRESETS[k];
   if(!p){toast('请先选择课程案例');return;}
   if(!beforeReplace())return;userEdited=false;clearIssue();
-  state=normalizeState(Object.assign(clone(DEFAULTS),clone(p.data)));
-  state.caseSource=p.source||'';
+  state=applyCaseMeta(normalizeState(Object.assign(clone(DEFAULTS),clone(p.data))),p);
   save();renderForm();showTab('report');
+  if(typeof updateTrialContext==='function')updateTrialContext();
   toast('已载入课程案例：'+p.label);
 };
 
@@ -1423,7 +1450,7 @@ document.getElementById('btnPdf').onclick=()=>{if(!ensureReport())return;toast('
 document.getElementById('btnXls').onclick=()=>runExport('btnXls',exportExcel);
 document.getElementById('btnDoc').onclick=()=>runExport('btnDoc',()=>exportDocx());
 document.getElementById('btnHtml').onclick=()=>runExport('btnHtml',exportInteractiveHtml);
-function resetAll(){if(!beforeReplace())return;state=normalizeState(clone(DEFAULTS));userEdited=false;clearIssue();save();renderForm();showTab('input');if(typeof updateTrialContext==='function')updateTrialContext();toast('已恢复教学默认数据；可撤销此次操作');}
+function resetAll(){if(!beforeReplace())return;state=defaultCaseState();userEdited=false;clearIssue();const cs=document.getElementById('caseSel');if(cs&&CASE_PRESETS[DEFAULT_CASE_KEY])cs.value=DEFAULT_CASE_KEY;save();renderForm();showTab('input');if(typeof updateTrialContext==='function')updateTrialContext();toast('已恢复默认展示案例；可撤销此次操作');}
 document.getElementById('btnReset').onclick=resetAll;
 document.getElementById('btnReset2').onclick=resetAll;
 document.getElementById('btnGen').onclick=()=>showTab('report');
@@ -1611,9 +1638,9 @@ function generate(){
     </div>`).join('')}</div>`);
   const nyName='运营期第 '+(M.normalY+1)+' 年（'+yLblOp(M.normalY)+'）';
   H.push(`<div class="concl ${J.passAll?'':'bad'}">
-    <h4>${J.passAll?'✓ 综合评估结论：项目财务可行':'✕ 综合评估结论：项目财务可行性未完全满足'}</h4>
+    <h4>${J.passAll?'✓ 综合评估结论：项目财务可行（适用指标均达标）':'✕ 综合评估结论：项目财务可行性未完全满足'}</h4>
     <p>按《建设项目经济评价方法与参数》（第三版）财务评价口径测算：本项目全部投资税后财务净现值 <b>${f2(M.ind.ai.npv)} 万元</b>（要求 ≥ 0），内部收益率 <b>${pc(M.ind.ai.irr)}</b>（要求 ≥ ${pc(s.i0,0)}）；静态投资回收期 <b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'计算期内未回收'}</b>（基准 ≤ ${s.ptBase} 年），动态投资回收期 <b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'计算期内未回收'}</b>（基准 ≤ ${s.pdBase} 年）。资本金税后内部收益率 <b>${pc(M.ind.eq.irr)}</b>、净现值 <b>${f2(M.ind.eq.npv)} 万元</b>。${nyName}${s.caliber==='legacy'?'总投资收益率（税前）':'总投资收益率（EBIT/总投资）'}<b>${pc(M.roiPre)}</b>，盈亏平衡点（生产能力利用率）<b>${pc(M.bepNormal)}</b>。财务生存能力方面，运营期各年累计盈余资金最小值 <b>${f2(Math.min(...M.cumSurplusY))} 万元</b>${Math.min(...M.cumSurplusY)>=0?'，各年均为非负，资金链可持续':'，出现负值，存在资金缺口风险'}。</p>
-    <div class="std">判断依据：NPV ≥ 0；项目税后 IRR ≥ ${pc(s.i0,2)}，资本金税后 IRR ≥ ${pc(s.i0Equity??s.i0,2)}；静态回收期 ≤ ${s.ptBase} 年；动态回收期 ≤ ${s.pdBase} 年；累计盈余资金各年 ≥ 0。</div>
+    <div class="std">判断依据：NPV ≥ 0；项目税后 IRR ≥ ${pc(s.i0,2)}，资本金税后 IRR ≥ ${pc(s.i0Equity??s.i0,2)}；静态回收期 ≤ ${s.ptBase} 年；动态回收期 ≤ ${s.pdBase} 年；累计盈余资金各年 ≥ 0；现行口径下，无相应债务时 ICR/DSCR 标为“不适用”，不参与达标判断。</div>
   </div></div>`);
 
   H.push(`<div class="rp-sec"><h3>第一次读报告：这些结果怎么理解？</h3><p class="rp-p">净现值 NPV 是未来净现金流按所选基准折算后与投入相比的净额。本次为 ${f2(M.ind.ai.npv)} 万元；${M.ind.ai.npv>=0?'在本次输入和折现基准下为非负。':'在本次输入和折现基准下为负，需复核收入、成本和投资假设。'}</p><p class="rp-p">内部收益率 IRR 表示使净现值为零的折现率。本次为 ${pc(M.ind.ai.irr)}，税后基准为 ${pc(s.i0)}。显示“—”可能是现金流无法在求解区间找到收益率，并不代表收益为零。</p><p class="rp-p">回收期衡量累计现金流何时收回投入。“未回收”表示在所设计算期内未收回，不能当作 0 年。指标达标仅针对当前参数和判断基准；默认参数、案例映射和待核政策应结合来源逐项复核。</p></div>`);
@@ -2077,6 +2104,7 @@ function finishReport(H,ctx){
   /* ===== 十八、结论与建议 ===== */
   H.push(`<div class="rp-sec"><h3>十八、结论与建议</h3>`);
   const failKeys=new Set(J.items.filter(i=>i.pass===false).map(i=>i.key));
+  const passCount=J.items.filter(i=>i.pass===true).length, naCount=J.items.filter(i=>i.pass===null).length;
   const recs=[];
   if(failKeys.has('ptAi')||failKeys.has('pdAi'))recs.push('投资回收期未达基准：建议优化建设期与投资节奏、提高早期生产负荷、压缩非生产性投资，或复核基准回收期取值是否符合行业惯例。');
   if(failKeys.has('npvAi')||failKeys.has('irrAi'))recs.push('全部投资盈利指标未达基准：建议复核产品售价、单位成本、达产负荷与投资规模，必要时调整产品方案或分期建设。');
@@ -2085,11 +2113,11 @@ function finishReport(H,ctx){
   const icrFin=M.icrY.filter(isFinite),dscrFin=M.dscrY.filter(isFinite);
   if(icrFin.length&&Math.min(...icrFin)<1)recs.push('利息备付率低于 1，存在付息压力：建议提高盈利水平或降低债务规模。');
   if(dscrFin.length&&Math.min(...dscrFin)<1)recs.push('偿债备付率低于 1，存在还本付息缺口：建议优化还款安排或增加现金来源。');
-  if(!recs.length)recs.push('各项财务指标均达到基准要求。建议在实施阶段重点控制投资超支、成本和售价波动，保持融资结构稳定。');
+  if(!recs.length)recs.push('各项适用财务指标均达到基准要求（标注“不适用”的指标不参与判断）。建议在实施阶段重点控制投资超支、成本和售价波动，保持融资结构稳定。');
   H.push(`<div class="concl ${J.passAll?'ok':'bad'}">
-    <h4>${J.passAll?'✓ 综合结论：项目财务可行':'✕ 综合结论：项目财务可行性未完全满足'}</h4>
-    <p>本报告依据《建设项目经济评价方法与参数》（第三版）测算：全部投资税后 NPV <b>${f2(M.ind.ai.npv)} 万元</b>、IRR <b>${pc(M.ind.ai.irr)}</b>；资本金税后 IRR <b>${pc(M.ind.eq.irr)}</b>；静态/动态回收期分别为 <b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'未回收'}</b> 和 <b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'未回收'}</b>；正常年总投资收益率 <b>${pc(M.roiPre)}</b>，盈亏平衡点 <b>${pc(M.bepNormal)}</b>。${J.passAll?`${J.items.length} 项判断指标全部达标。`:'存在 '+failKeys.size+' 项判断指标未达标，需在决策前重点复核。'}</p>
-    <div class="std">结论仅基于本报告所列参数与口径；参数变化将直接影响结论，使用前请复核。</div>
+    <h4>${J.passAll?'✓ 综合结论：项目财务可行（适用指标均达标）':'✕ 综合结论：项目财务可行性未完全满足'}</h4>
+    <p>本报告依据《建设项目经济评价方法与参数》（第三版）测算：全部投资税后 NPV <b>${f2(M.ind.ai.npv)} 万元</b>、IRR <b>${pc(M.ind.ai.irr)}</b>；资本金税后 IRR <b>${pc(M.ind.eq.irr)}</b>；静态/动态回收期分别为 <b>${isFinite(M.ind.ai.pt)?f2(M.ind.ai.pt)+' 年':'未回收'}</b> 和 <b>${isFinite(M.ind.ai.pd)?f2(M.ind.ai.pd)+' 年':'未回收'}</b>；正常年总投资收益率 <b>${pc(M.roiPre)}</b>，盈亏平衡点 <b>${pc(M.bepNormal)}</b>。${J.passAll?`${passCount} 项适用判断指标全部达标。`:'存在 '+failKeys.size+' 项判断指标未达标，需在决策前重点复核。'}${naCount?`另有 ${naCount} 项指标因无相应债务而标注“不适用”，不参与达标判断。`:''}</p>
+    <div class="std">结论仅基于本报告所列参数与口径；参数变化将直接影响结论，使用前请复核。综合结论以适用判断指标为准；“不适用”不视为达标。</div>
   </div>`);
   H.push(`<div class="rp-h3">建议</div>${recs.map((r,i)=>`<p class="rp-p">${i+1}. ${r}</p>`).join('')}`);
   H.push(`<div class="rp-h3">主要风险提示</div>
@@ -2394,9 +2422,9 @@ function buildCompare(){
   const applicableN=J=>J.items.filter(i=>i.pass!==null).length;
   let cards=`<div class="cmp-cards">
     <div class="cmp-card"><div class="t">方案 A</div><div class="n">${escapeHtml(A.name)}</div>
-      <div class="m">${JA.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JA)}/${applicableN(JA)}）</div></div>
+      <div class="m">${JA.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行（适用指标）</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JA)}/${applicableN(JA)}）</div></div>
     <div class="cmp-card"><div class="t">方案 B</div><div class="n">${escapeHtml(B.name)}</div>
-      <div class="m">${JB.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JB)}/${applicableN(JB)}）</div></div>
+      <div class="m">${JB.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行（适用指标）</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JB)}/${applicableN(JB)}）</div></div>
   </div>`;
   let rows=CMP_ROWS.map(r=>{
     const a=r.get(A.data,MA),b=r.get(B.data,MB);
@@ -2605,7 +2633,7 @@ function exportExcel(){
     ['指标','数值','单位','判断标准','评价'],
   ];
   J.items.forEach(it=>head.push([it.label,it.disp,it.unit||'',it.base,it.pass===null?'不适用':it.pass?'达标':'未达标']));
-  head.push([],['综合结论',J.passAll?'财务可行（全部指标达标）':'财务可行性未完全满足（存在未达标指标）']);
+  head.push([],['综合结论',J.passAll?'财务可行（适用指标均达标）':'财务可行性未完全满足（存在未达标指标）']);
   head.push([],['总投资',f2(M.totalInv),'万元','',''],['资本金合计',f2(M.capTotal),'万元','',''],
     ['总投资收益率（正常年）',pc(M.roiPre),'','',''],['盈亏平衡点（正常年）',pc(M.bepNormal),'','','']);
   addSheet('评估结论',head,[34,30,8,22,10,14,10,16]);

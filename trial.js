@@ -11,18 +11,19 @@ const FIELD_HELP={
   loanRatio:'借款占投资的比例；其余部分由资本金承担。',
   policyProfile:'建阳政策为固定案例对照，不会根据其他项目自动检索或判断适用性。'
 };
-pgG.innerHTML=`<div class="guide-head"><span class="eyebrow">使用方法 · ${TRIAL_VERSION}</span><h1 id="guideTitle">从第一次测算，到带走报告。</h1><p>这个工具帮助你计算项目投资、收入、成本和现金流，并比较不同假设。建议先用教学案例走一遍，再填写自己的项目。</p><button class="btn btn-primary" data-action="demo">开始体验教学案例 →</button><button class="btn btn-line" data-go="input">继续编辑当前项目</button></div>
+pgG.innerHTML=`<div class="guide-head"><span class="eyebrow">使用方法 · ${TRIAL_VERSION}</span><h1 id="guideTitle">从第一次测算，到带走报告。</h1><p>这个工具帮助你计算项目投资、收入、成本和现金流，并比较不同假设。建议先用教学案例走一遍，再填写自己的项目。</p><button class="btn btn-primary" data-action="demo">开始体验教学案例 →</button><button class="btn btn-line" data-go="input">继续编辑当前项目</button><a class="btn btn-line" href="usage-guide.html" target="_blank" rel="noopener">完整图文说明 ↗</a></div>
 <div class="guide-steps">
 <article><span class="step-no">01</span><h2>选一个案例</h2><p>教学案例为虚拟参数，适合练习。建阳案例来自公开可研，但存在税费和成本映射假设。旧表案例仅用于历史口径复现。</p><button class="linkbtn" data-go="input" data-target="caseSel">去选择案例 →</button></article>
 <article><span class="step-no">02</span><h2>改一个参数</h2><p>先试着把产品含税单价降低 10%。注意当前显示的单位；其他参数保持不变，才能观察价格带来的影响。</p><button class="linkbtn" data-go="input" data-field="price">去修改含税单价 →</button></article>
 <article><span class="step-no">03</span><h2>生成并读懂结果</h2><p>净现值 NPV、内部收益率 IRR、回收期分别描述净收益、收益率和回收时间。未达标不等于软件出错，可在报告中的说明查看原因。</p><button class="linkbtn" data-go="report">去生成评估报告 →</button></article>
 <article><span class="step-no">04</span><h2>保存与对比</h2><p>修改前先保存方案 A，修改后保存方案 B，再选择两者进行对比。自动暂存只保留当前编辑数据，并不替你保存多个版本。</p><button class="linkbtn" data-go="input" data-target="btnScenSave">去保存方案 →</button><button class="linkbtn" data-go="compare">去方案对比 →</button></article>
 <article><span class="step-no">05</span><h2>带走结果与数据</h2><p>报告可导出 Excel、Word、交互 HTML，PDF 使用浏览器打印保存。项目备份 JSON 保留录入参数，可以在另一个浏览器导入继续编辑。</p><button class="linkbtn" data-go="report" data-target="btnDoc">去导出报告 →</button><button class="linkbtn" data-go="input" data-target="btnProjectDownload">去下载项目备份 →</button></article>
-<article><span class="step-no">06</span><h2>做一次小实验</h2><p>记录原案例 NPV → 单价降低 10% → 保存两个方案并对比 → 导出报告。完成后，用自己的话解释为什么结果发生变化。</p><button class="linkbtn" data-go="quiz">去课堂练习 →</button><button class="linkbtn" id="btnFeedback">复制反馈模板 →</button></article>
-</div><div class="guide-notes"><h2>使用前了解这三件事</h2><p><b>保存在哪里？</b> 自动暂存和方案在当前浏览器中，清理数据、换浏览器或设备后不会自动同步。重要数据请下载项目备份。</p><p><b>报告能说明什么？</b> 报告基于录入假设进行财务测算；参数检查和固定政策参考不能替代项目审批或完整可研。政策原文链接可在建阳案例报告中查看。</p><p><b>遇到错误怎么办？</b> 根据页面红色提示修改对应字段；如果组件加载或导出失败，可下载项目备份并复制反馈模板，记录步骤及浏览器版本。</p></div>`;
+<article><span class="step-no">06</span><h2>做一次小实验</h2><p>记录原案例 NPV → 单价降低 10% → 保存两个方案并对比 → 导出报告。完成后，用自己的话解释为什么结果发生变化。</p><button class="linkbtn" data-go="quiz">去课堂练习 →</button><a class="linkbtn" href="https://pll2rq73co.feishu.cn/share/base/shrcnq0uo4vK0KFAc1tg6xL2m2c" target="_blank" rel="noopener">填写反馈问卷 →</a></article>
+</div><div class="guide-notes"><h2>使用前了解这三件事</h2><p><b>保存在哪里？</b> 自动暂存和方案在当前浏览器中，清理数据、换浏览器或设备后不会自动同步。重要数据请下载项目备份。</p><p><b>报告能说明什么？</b> 报告基于录入假设进行财务测算；参数检查和固定政策参考不能替代项目审批或完整可研。政策原文链接可在建阳案例报告中查看。</p><p><b>遇到错误怎么办？</b> 根据页面红色提示修改对应字段；如果组件加载或导出失败，可下载项目备份并填写反馈问卷，记录步骤及浏览器版本。</p></div>`;
 function updateTrialContext(){
   const el=document.getElementById('caseContext');
-  el.textContent=(state.caseSource?'案例 / 资料映射':'教学默认或自行录入')+' · '+(state.projName||'未命名项目')+(userEdited?' · 参数已修改':'');
+  const type=state.caseTypeLabel||(state.caseSource?'案例 / 资料映射':'自行录入');
+  el.textContent=type+' · '+(state.projName||'未命名项目')+(userEdited?' · 参数已修改':'');
   el.title=state.caseSource||'初始值为虚拟教学参数；请按项目实际资料核实。';
 }
 function addFieldHelp(){
@@ -45,7 +46,7 @@ document.addEventListener('click',e=>{
   const button=e.target.closest('[data-go],[data-action]');if(!button)return;
   if(button.dataset.action==='demo'){
     if(!beforeReplace())return;
-    state=normalizeState(clone(DEFAULTS));state.projName='教学案例：新建生产项目';state.caseSource='虚拟教学案例，参数仅用于学习。基准收益率和回收期均为教学假设，不代表真实项目要求。';userEdited=false;clearIssue();save();renderForm();showTab('input');updateTrialContext();toast('已载入教学案例。可先修改含税单价，再生成报告。');
+    state=normalizeState(clone(DEFAULTS));state.projName='教学案例：新建生产项目';state.caseSource='虚拟教学案例，参数仅用于学习。基准收益率和回收期均为教学假设，不代表真实项目要求。';state.caseType='virtual';state.caseTag='虚拟';state.caseTypeLabel='虚拟教学案例';userEdited=false;clearIssue();save();renderForm();showTab('input');const cs=document.getElementById('caseSel');if(cs)cs.value='base';updateTrialContext();toast('已载入教学案例。可先修改含税单价，再生成报告。');
   }else navigateTrial(button.dataset.go,button.dataset.field,button.dataset.target);
 });
 document.getElementById('scenarioName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('confirmScenario').click();}});
@@ -83,11 +84,6 @@ async function runExport(id,action){
   catch(error){console.error(error);status.textContent='导出失败，输入已保留。请重试、使用打印保存，或下载项目备份。';toast('导出失败：'+error.message);}
   finally{button.disabled=false;button.textContent=label;}
 }
-document.getElementById('btnFeedback').onclick=async()=>{
-  const text=`项目财务分析工具 · ${TRIAL_VERSION}\n浏览器：${navigator.userAgent}\n进行的任务：\n操作步骤：\n期望结果：\n实际结果 / 错误提示：\n最困惑的一步：\n（请自行决定是否提供项目参数，不包含自动上传）`;
-  try{await navigator.clipboard.writeText(text);toast('反馈模板已复制，可粘贴后填写');}
-  catch(e){const p=document.createElement('textarea');p.value=text;p.setAttribute('aria-label','反馈模板，可选择复制');p.style.cssText='width:100%;min-height:220px';pgG.append(p);p.focus();p.select();}
-};
 const route=location.hash.slice(1);
 if(['guide','input','report','compare','quiz'].includes(route))showTab(route);
 else {try{if(!localStorage.getItem(LS_KEY))showTab('guide');}catch(e){showTab('guide');}}

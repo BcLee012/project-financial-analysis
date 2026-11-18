@@ -39,6 +39,7 @@ function parseProjectFile(text,defaults){
   const pack=JSON.parse(text);
   if(!pack||pack.format!=='pfe-project'||pack.version!==1||!pack.data||typeof pack.data!=='object')throw Error('文件格式或版本不支持，请选择本工具导出的 JSON 项目文件');
   const data={};for(const k of Object.keys(defaults)){if(!Object.prototype.hasOwnProperty.call(pack.data,k))throw Error('项目文件缺少参数：'+k);data[k]=pack.data[k];}
+  for(const k of ['caseType','caseTag','caseTypeLabel'])if(pack.data[k]!=null)data[k]=pack.data[k];
   const issue=projectIssue(data);if(issue)throw Error(issue.message);
   return data;
 }
