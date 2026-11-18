@@ -6,9 +6,10 @@
 <title>投资项目财务评估系统</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@600;800&display=swap" rel="stylesheet">
-<script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script defer src="vendor/echarts.min.js"></script>
+<script defer src="vendor/xlsx.full.min.js"></script>
+<script defer src="vendor/docx.umd.js"></script>
+<link rel="stylesheet" href="trial.css?v=20261118">
 <style>
 :root{
   --ink:#141625; --ink2:#3c4152; --mut:#71778a;
@@ -469,6 +470,7 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
   </div>
   <span class="sub">PROJECT&nbsp;FINANCIAL&nbsp;EVALUATION</span>
   <nav class="pillnav">
+    <button id="tabGuide" type="button">使用方法</button>
     <button id="tabInput" class="on" type="button">参数录入</button>
     <button id="tabReport" type="button">评估报告</button>
     <button id="tabCompare" type="button">方案对比</button>
@@ -482,13 +484,18 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
 </header>
 
 <main class="wrap">
+  <section id="page-guide" hidden aria-labelledby="guideTitle"></section>
   <!-- ============ 录入页 ============ -->
   <section id="page-input">
     <div class="pagehead">
       <div class="kick">FINANCIAL EVALUATION</div>
       <h1>基础数据录入</h1>
+      <p class="trial-version">学生试用版 · 2026.11.18</p>
       <p>参照《建设项目经济评价方法与参数》（第三版）报表体系设置参数，计算期（建设期/运营期）、还款方式、计息口径均可自定义。修改参数后点击「生成评估报告」，自动完成全套报表编制、盈利能力 / 清偿能力 / 财务生存能力分析与可行性判断，报告支持导出 PDF / Excel / Word。数据仅保存在您当前浏览器中。</p>
     </div>
+    <div class="welcome"><div><span class="eyebrow">第一次使用</span><h2>从一个案例，开始理解项目财务。</h2><p>载入教学数据 → 修改含税单价 → 生成报告。参数均可修改，结果随之重新计算。</p></div><div class="welcome-actions"><button class="btn btn-primary" data-action="demo">一键体验教学案例</button><button class="btn btn-line" data-go="guide">查看使用方法 →</button></div></div>
+    <div class="trial-state"><span id="caseContext"></span><span id="saveStatus" role="status">数据保存在当前浏览器</span></div>
+    <div class="error-summary" id="errorSummary" role="alert" tabindex="-1" hidden></div>
     <div class="scenbar">
       <span class="scen-title">方案管理</span>
       <select id="scenSel"><option value="">（暂无已保存方案）</option></select>
@@ -498,9 +505,11 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
       <select id="caseSel"><option value="">课程案例…</option></select>
       <button class="btn btn-line" id="btnCaseLoad" type="button">载入案例</button>
       <span class="sp"></span>
-      <button class="btn btn-dark" id="btnScenSave" type="button">将当前参数保存为方案</button>
+      <button class="btn btn-dark" id="btnScenSave" type="button">保存方案至本浏览器</button>
       <span class="scen-hint">同一项目可保存多个版本（如不同融资结构、不同负荷方案），并可在「方案对比」页两两对比。</span>
     </div>
+    <div class="backup-tools"><button class="btn btn-line" id="btnProjectDownload">下载项目备份</button><button class="btn btn-line" id="btnProjectImport">导入项目备份</button><input id="projectFileInput" type="file" accept=".json,application/json" hidden><button class="btn btn-line" id="btnUndo" disabled>撤销上次载入 / 重置</button><button class="btn btn-line" id="btnUndoDelete" disabled>撤销删除方案</button><span>备份文件可以在另一台电脑导入；浏览器保存不自动同步。</span></div>
+    <p class="advanced-note">先检查项目、投资、融资和收入成本。折旧、流动资金等高级参数可展开修改，收起时仍按当前值计算。</p>
     <div class="quicknav" id="quicknav"></div>
     <div id="formRoot"></div>
     <div class="formbar">
@@ -519,8 +528,9 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
       <button class="btn btn-line" id="btnXls" type="button">导出 Excel 报表</button>
       <button class="btn btn-line" id="btnDoc" type="button">导出 Word（.docx）</button>
       <button class="btn btn-line" id="btnHtml" type="button">导出交互式 HTML</button>
-      <button class="btn btn-dark" id="btnPdf" type="button">导出 PDF（打印）</button>
+      <button class="btn btn-dark" id="btnPdf" type="button">打印 / 保存为 PDF</button>
     </div>
+    <p id="exportStatus" role="status" class="rp-note"></p>
     <div class="report" id="reportRoot"></div>
   </section>
 
@@ -556,10 +566,11 @@ table.cmp thead th{background:color-mix(in srgb,var(--accent-bg) 55%,var(--paper
   </section>
 </main>
 
-<div class="toast" id="toast"></div>
+<dialog id="scenarioDialog" aria-labelledby="scenarioDialogTitle"><form method="dialog"><h2 id="scenarioDialogTitle">保存一个方案版本</h2><p>保存在当前浏览器。命名后可以与其他方案对比。</p><label for="scenarioName">方案名称</label><input id="scenarioName" maxlength="200" required><div><button class="btn btn-line" value="cancel" formnovalidate>取消</button><button class="btn btn-primary" id="confirmScenario" value="save">保存方案</button></div></form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="rules.js?v=20261112"></script>
-<script src="cases.js?v=20261112"></script>
+<script src="rules.js?v=20261118"></script>
+<script src="cases.js?v=20261118"></script>
 <script src="policy.js"></script>
 <script>
 'use strict';
@@ -1122,17 +1133,34 @@ function INT_LBL_CAL(m){return m==='half'?'当年借款按半年计息':'当年�
 </script>
 <script src="analysis.js"></script>
 <script src="insights.js"></script>
+<script src="project.js?v=20261118"></script>
 <script>
 'use strict';
 /* ================= 表单 ================= */
 const LS_KEY='pfe_state_v1';
 let state=normalizeState(load());
 function load(){
-  try{const raw=localStorage.getItem(LS_KEY);if(raw){const o=JSON.parse(raw);if(o&&o.engItems)return Object.assign(clone(DEFAULTS),o);}}catch(e){}
+  try{const raw=localStorage.getItem(LS_KEY);if(raw){const o=JSON.parse(raw);if(o&&Array.isArray(o.engItems)&&o.engItems.length&&o.engItems.every(it=>it&&typeof it==='object'))return Object.assign(clone(DEFAULTS),o);}}catch(e){}
   return clone(DEFAULTS);
 }
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+function storageWrite(key,value){
+  try{localStorage.setItem(key,JSON.stringify(value));const el=document.getElementById('saveStatus');if(el){el.textContent='已保存至本浏览器 · '+new Date().toLocaleTimeString('zh-CN');el.classList.remove('storage-failed');}return true;}
+  catch(e){const el=document.getElementById('saveStatus');if(el){el.textContent='浏览器保存失败，请下载项目备份';el.classList.add('storage-failed');}toast('浏览器未能保存数据，请下载项目备份');return false;}
+}
+function save(){return storageWrite(LS_KEY,state);}
+let userEdited=false,undoState=null,deletedScens=null;
+function beforeReplace(){undoState=clone(state);document.getElementById('btnUndo').disabled=false;return true;}
+function clearIssue(){document.getElementById('errorSummary').hidden=true;document.querySelectorAll('[aria-invalid="true"]').forEach(el=>el.removeAttribute('aria-invalid'));document.querySelectorAll('.field-error').forEach(el=>el.remove());}
+function showIssue(message,key){
+  showTab('input');clearIssue();const box=document.getElementById('errorSummary');box.textContent=message;box.hidden=false;
+  let el=[...document.querySelectorAll('[data-k]')].find(el=>el.dataset.k===key);
+  if(!el&&key?.startsWith('engItems.')){const a=key.split('.');el=document.querySelector(`[data-ei="${a[1]}"][data-f="${a[2]}"]`);}
+  if(!el&&key==='engItems')el=document.querySelector('[data-ei]');
+  if(el){const details=el.closest('details');if(details)details.open=true;el.setAttribute('aria-invalid','true');const note=document.createElement('span');note.className='field-error';note.textContent=message;el.insertAdjacentElement('afterend',note);el.focus();el.scrollIntoView({block:'center',behavior:'smooth'});}else box.focus();
+}
+function inputFailure(){const issue=projectIssue(state);if(issue)showIssue(issue.message,issue.key);return issue;}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),5000);}
 
 const RULE_PROV_OPTS=(typeof PFE_RULES!=='undefined'?PFE_RULES.provinces.map(p=>[p.name,p.name]):[['北京市','北京市']]);
 const RULE_LOC_OPTS=(typeof PFE_RULES!=='undefined'?PFE_RULES.locationCategories.map(l=>[l.key,l.name]):[['urban','市区'],['county','县城/镇'],['other','其他']]);
@@ -1189,46 +1217,30 @@ const SECTIONS=[
    {k:'i0Equity',l:'资本金税后基准收益率',u:'%（留空同项目税后）',pct:1,optional:1},{k:'ptBase',l:'基准静态回收期',u:'年'},{k:'pdBase',l:'基准动态回收期',u:'年'}]},
 ];
 
-function modelInputError(s){
-  const percent=value=>Number.isFinite(value)&&value>=0&&value<=1;
-  const missing=SECTIONS.flatMap(section=>section.items||[]).find(
-    field=>!field.sel&&!field.txt&&!field.optional&&(s.caliber!=='legacy'||field.k!=='assetRecoveryRatio')&&!Number.isFinite(s[field.k])
-  );
-  if(missing)return '请填写有效数值：'+missing.l;
-  if(s.load.some(v=>!Number.isFinite(v)||v<0))return '请填写各运营年的非负生产负荷';
-  if(s.engItems.some(item=>['qty','price','equip'].some(k=>!Number.isFinite(item[k])||item[k]<0)))return '请填写工程明细中的非负数值';
-  if(!s.invSplit.every(v=>Number.isFinite(v)&&v>=0)||!s.invSplit.some(v=>v>0))return '各年建设投资比例须非负，且合计大于 0';
-  if(!s.loanRatio.every(percent)||!percent(s.wcLoanRatio))return '借款比例须在 0% 至 100% 之间';
-  if(!Number.isFinite(s.i0)||s.i0<=-1)return '基准收益率必须大于 −100%';
-  if([s.i0Pre,s.i0Equity].some(v=>v!=null&&(!Number.isFinite(v)||v<=-1)))return '税前和资本金基准收益率须大于 −100%';
-  if(!percent(s.incomeTax)||s.incomeTaxRates.some(v=>v!=null&&!percent(v)))return '所得税率须在 0% 至 100% 之间';
-  if(!percent(s.vatRate))return '增值税率须在 0% 至 100% 之间';
-  if(s.caliber!=='legacy'){
-    if(![s.matVatRate,s.fuelVatRate].every(v=>v==null||percent(v)))return '进项抵扣税率须在 0% 至 100% 之间';
-    if(!Number.isFinite(s.assetRecoveryRatio)||s.assetRecoveryRatio<0)return '期末净回收比例须为非负数';
-  }
-  return '';
-}
+function modelInputError(s){return projectIssue(s)?.message||'';}
 function getPath(o,p){return p.split('.').reduce((a,k)=>a[k],o);}
 function setPath(o,p,v){const ks=p.split('.');let t=o;for(let i=0;i<ks.length-1;i++)t=t[ks[i]];t[ks[ks.length-1]]=v;}
 
 function fldHtml(it){
   const v=getPath(state,it.k);
   if(it.sel){
-    return `<label>${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
-      <select data-k="${it.k}">${it.sel.map(o=>`<option value="${o[0]}" ${v===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+    return `<label for="field-${it.k}">${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
+      <select id="field-${it.k}" data-k="${it.k}">${it.sel.map(o=>`<option value="${o[0]}" ${v===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
   }
   const disp=v==null?'':it.pct?(v*100):v;
-  return `<label>${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
-    <input type="${it.txt?'text':'number'}" step="any" value="${disp}" data-k="${it.k}" data-pct="${it.pct?1:0}" data-int="${it.int?1:0}">`;
+  return `<label for="field-${it.k}">${it.l}${it.u?` <span class="u">${it.u}</span>`:''}</label>
+    <input id="field-${it.k}" type="${it.txt?'text':'number'}" step="any" value="${escapeHtml(disp)}" data-k="${it.k}" data-pct="${it.pct?1:0}" data-int="${it.int?1:0}">`;
 }
 
 function renderForm(){
   const root=document.getElementById('formRoot');
+  if(typeof updateTrialContext==='function')updateTrialContext();
   root.innerHTML='';
   SECTIONS.forEach((sec,si)=>{
-    const el=document.createElement('div');el.className='fsec';el.id='fsec-'+si;
+    const advanced=[4,7,8,9,10].includes(si);
+    const el=document.createElement(advanced?'details':'div');el.className='fsec';el.id='fsec-'+si;
     el.innerHTML=`<h2><span class="idx">${String(si+1).padStart(2,'0')}</span>${sec.title}${sec.dyn?`<span class="hint">随计算期年数自动生成</span>`:''}</h2>`;
+    if(advanced){const h=el.querySelector('h2'),summary=document.createElement('summary');summary.append(h);el.prepend(summary);}
     const grid=document.createElement('div');grid.className='fgrid';
     (sec.items||[]).forEach(it=>{
       const fld=document.createElement('div');fld.className='fld'+(it.txt?' txt':'');
@@ -1267,10 +1279,10 @@ function renderForm(){
       const tb=tbl.querySelector('tbody');
       state.engItems.forEach((it,i)=>{
         const tr=document.createElement('tr');
-        tr.innerHTML=`<td><input class="nm" value="${it.name}" data-ei="${i}" data-f="name"></td>
-          <td><input type="number" step="any" value="${it.qty}" data-ei="${i}" data-f="qty"></td>
-          <td><input type="number" step="any" value="${it.price}" data-ei="${i}" data-f="price"></td>
-          <td><input type="number" step="any" value="${it.equip}" data-ei="${i}" data-f="equip"></td>
+        tr.innerHTML=`<td><input class="nm" aria-label="第 ${i+1} 项工程名称" value="${escapeHtml(it.name)}" data-ei="${i}" data-f="name"></td>
+          <td><input type="number" step="any" aria-label="第 ${i+1} 项工程工程量" value="${it.qty??''}" data-ei="${i}" data-f="qty"></td>
+          <td><input type="number" step="any" aria-label="第 ${i+1} 项工程单价" value="${it.price??''}" data-ei="${i}" data-f="price"></td>
+          <td><input type="number" step="any" aria-label="第 ${i+1} 项工程设备费" value="${it.equip??''}" data-ei="${i}" data-f="equip"></td>
           <td><button class="delrow" data-del="${i}" title="删除该行" ${state.engItems.length<=1?'disabled':''}>×</button></td>`;
         tb.appendChild(tr);
       });
@@ -1287,14 +1299,14 @@ function renderForm(){
   qn.innerHTML='';
   SECTIONS.forEach((sec,si)=>{
     const b=document.createElement('button');b.type='button';b.textContent=String(si+1).padStart(2,'0')+' '+sec.title.replace(/（.*?）/g,'');
-    b.onclick=()=>document.getElementById('fsec-'+si).scrollIntoView({behavior:'smooth'});
+    b.onclick=()=>{const el=document.getElementById('fsec-'+si);if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({behavior:'smooth'});};
     qn.appendChild(b);
   });
 }
 
 /* 表单事件（委托） */
 document.getElementById('formRoot').addEventListener('input',e=>{
-  const t=e.target;
+  const t=e.target;userEdited=true;clearIssue();if(typeof updateTrialContext==='function')updateTrialContext();
   if(t.dataset.k){
     if(t.tagName==='SELECT'){
       setPath(state,t.dataset.k,t.value);
@@ -1313,7 +1325,9 @@ document.getElementById('formRoot').addEventListener('input',e=>{
 document.getElementById('formRoot').addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset&&['buildYears','opYears','repayYears'].includes(t.dataset.k)){
-    normalizeState(state);save();renderForm();toast('计算期已更新，相关参数已自动适配');
+    const k=t.dataset.k,v=state[k],max=k==='buildYears'?10:k==='opYears'?30:state.opYears;
+    if(!Number.isInteger(v)||v<1||v>max){showIssue('年限须为 1–'+max+' 的整数',k);return;}
+    normalizeState(state);save();renderForm();toast('年限已更新，分年数组已补齐或截断；请复核投资分配、负荷与税率');
   }
 });
 document.getElementById('formRoot').addEventListener('click',e=>{
@@ -1324,27 +1338,23 @@ document.getElementById('formRoot').addEventListener('click',e=>{
 /* ================= 方案管理（多项目多版本，localStorage） ================= */
 const SCEN_KEY='pfe_scens_v1';
 function loadScens(){try{const a=JSON.parse(localStorage.getItem(SCEN_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
-function saveScens(a){try{localStorage.setItem(SCEN_KEY,JSON.stringify(a));}catch(e){}}
+function saveScens(a){return storageWrite(SCEN_KEY,a);}
 function refreshScenSel(){
   const sel=document.getElementById('scenSel');const scens=loadScens();
   sel.innerHTML=scens.length
-    ?scens.map((sc,i)=>`<option value="${i}">${sc.name}（${new Date(sc.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}）</option>`).join('')
+    ?scens.map((sc,i)=>`<option value="${i}">${escapeHtml(sc.name)}（${new Date(sc.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}）</option>`).join('')
     :'<option value="">（暂无已保存方案）</option>';
 }
 document.getElementById('btnScenSave').onclick=()=>{
-  const error=modelInputError(state);
-  if(error){toast(error);return;}
-  const dflt=(state.projName||'未命名项目')+' · '+new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-  const name=window.prompt('方案名称：',dflt);if(name==null)return;
-  const scens=loadScens();scens.push({name:name.trim()||dflt,ts:Date.now(),data:clone(state)});
-  saveScens(scens);refreshScenSel();
-  document.getElementById('scenSel').value=String(scens.length-1);
-  toast('方案已保存（共 '+scens.length+' 个）');
+  if(inputFailure())return;
+  const field=document.getElementById('scenarioName');field.value=(state.projName||'项目')+' · '+new Date().toLocaleTimeString('zh-CN');
+  const dialog=document.getElementById('scenarioDialog');dialog.returnValue='';dialog.showModal();field.focus();field.select();
 };
 document.getElementById('btnScenLoad').onclick=()=>{
   const i=+document.getElementById('scenSel').value;const scens=loadScens();
   if(!scens.length||isNaN(i)||!scens[i]){toast('请先选择要载入的方案');return;}
-  state=normalizeState(Object.assign(clone(DEFAULTS),clone(scens[i].data)));
+  if(!beforeReplace())return;
+  state=normalizeState(Object.assign(clone(DEFAULTS),clone(scens[i].data)));userEdited=false;clearIssue();
   save();renderForm();
   if(!showTab('report'))return;
   toast('已载入方案：'+scens[i].name);
@@ -1352,10 +1362,11 @@ document.getElementById('btnScenLoad').onclick=()=>{
 document.getElementById('btnScenDel').onclick=()=>{
   const i=+document.getElementById('scenSel').value;const scens=loadScens();
   if(!scens.length||isNaN(i)||!scens[i]){toast('请先选择要删除的方案');return;}
-  const nm=scens[i].name;scens.splice(i,1);saveScens(scens);refreshScenSel();
+  const nm=scens[i].name;const previous=clone(scens);scens.splice(i,1);if(!saveScens(scens))return;deletedScens={record:previous[i],index:i};document.getElementById('btnUndoDelete').disabled=false;refreshScenSel();
   toast('已删除方案：'+nm);
 };
 document.getElementById('btnLegacy').onclick=()=>{
+  if(!beforeReplace())return;userEdited=false;clearIssue();
   state=normalizeState(clone(LEGACY_CASE));save();renderForm();showTab('report');
   toast('已载入原表案例口径（增值税17%、城建税4%、教育附加2%、全年计息）');
 };
@@ -1364,6 +1375,7 @@ caseSel.innerHTML='<option value="">课程案例…</option>'+Object.entries(CAS
 document.getElementById('btnCaseLoad').onclick=()=>{
   const k=caseSel.value;const p=CASE_PRESETS[k];
   if(!p){toast('请先选择课程案例');return;}
+  if(!beforeReplace())return;userEdited=false;clearIssue();
   state=normalizeState(Object.assign(clone(DEFAULTS),clone(p.data)));
   state.caseSource=p.source||'';
   save();renderForm();showTab('report');
@@ -1383,12 +1395,14 @@ document.getElementById('btnTheme').onclick=()=>{
 try{applyTheme(localStorage.getItem(THEME_KEY)||'light');}catch(e){applyTheme('light');}
 
 /* ================= 页签 ================= */
+const pgG=document.getElementById('page-guide'),tabG=document.getElementById('tabGuide');
 const pgI=document.getElementById('page-input'),pgR=document.getElementById('page-report'),pgC=document.getElementById('page-compare'),pgQ=document.getElementById('page-quiz');
 const tabI=document.getElementById('tabInput'),tabR=document.getElementById('tabReport'),tabC=document.getElementById('tabCompare'),tabQ=document.getElementById('tabQuiz');
 let lastM=null;
 let lastReportState=null;
 function showTab(which){
   if(which==='report'&&!ensureReport())return false;
+  pgG.hidden=which!=='guide';tabG.classList.toggle('on',which==='guide');
   pgI.hidden=which!=='input';pgR.hidden=which!=='report';pgC.hidden=which!=='compare';pgQ.hidden=which!=='quiz';
   tabI.classList.toggle('on',which==='input');tabR.classList.toggle('on',which==='report');tabC.classList.toggle('on',which==='compare');tabQ.classList.toggle('on',which==='quiz');
   if(which==='report'){
@@ -1399,16 +1413,17 @@ function showTab(which){
   window.scrollTo({top:0});
   return true;
 }
+tabG.onclick=()=>showTab('guide');
 tabI.onclick=()=>showTab('input');
 tabR.onclick=()=>showTab('report');
 tabC.onclick=()=>showTab('compare');
 tabQ.onclick=()=>showTab('quiz');
 document.getElementById('btnBack').onclick=()=>showTab('input');
 document.getElementById('btnPdf').onclick=()=>{if(!ensureReport())return;toast('在打印对话框中选择「另存为 PDF」');setTimeout(()=>window.print(),300);};
-document.getElementById('btnXls').onclick=()=>exportExcel();
-document.getElementById('btnDoc').onclick=()=>exportWord();
-document.getElementById('btnHtml').onclick=()=>exportInteractiveHtml();
-function resetAll(){state=normalizeState(clone(DEFAULTS));save();renderForm();generate();toast('已恢复默认案例数据');}
+document.getElementById('btnXls').onclick=()=>runExport('btnXls',exportExcel);
+document.getElementById('btnDoc').onclick=()=>runExport('btnDoc',()=>exportDocx());
+document.getElementById('btnHtml').onclick=()=>runExport('btnHtml',exportInteractiveHtml);
+function resetAll(){if(!beforeReplace())return;state=normalizeState(clone(DEFAULTS));userEdited=false;clearIssue();save();renderForm();showTab('input');if(typeof updateTrialContext==='function')updateTrialContext();toast('已恢复教学默认数据；可撤销此次操作');}
 document.getElementById('btnReset').onclick=resetAll;
 document.getElementById('btnReset2').onclick=resetAll;
 document.getElementById('btnGen').onclick=()=>showTab('report');
@@ -1479,7 +1494,7 @@ function feeTableHtml(s){
     ...R.feeRules.map(r=>[r.code,r.name,r.base,r.doc,r.status==='active'?'现行':'参考']),
     ...pDocs.map((r,i)=>['P'+String(i+1).padStart(2,'0'),r.name,'—',r.doc,r.status==='reference'?'参考':'待补充']),
   ];
-  return `<div class="tscroll"><table class="rtable"><caption>工程建设其他费用依据库（国家 + ${s.province}）</caption>
+  return `<div class="tscroll"><table class="rtable"><caption>工程建设其他费用依据库（国家 + ${escapeHtml(s.province)}）</caption>
     <thead><tr><th class="l">编号</th><th class="l">费用名称</th><th class="l">计算基数</th><th class="l">依据文件</th><th>状态</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td class="l">${r[0]}</td><td class="l">${r[1]}</td><td class="l">${r[2]}</td><td class="l">${r[3]}</td><td>${r[4]}</td></tr>`).join('')}</tbody></table></div>
     <p class="rp-note">仅登记依据条目，不内置具体费率；取费时按项目所在地现行版本和行业定额计算。</p>`;
@@ -1542,7 +1557,7 @@ function analysisSectionHtml(s,M,A){
 
 function generate(){
   const error=modelInputError(state);
-  if(error){toast(error);return null;}
+  if(error){inputFailure();return null;}
   const s=normalizeState(clone(state));
   const M=computeModel(s);
   const J=judge(s,M);
@@ -1581,9 +1596,9 @@ function generate(){
   /* ===== 抬头 ===== */
   H.push(`<div class="rp-head">
     <div class="rp-tag">建设项目经济评价 · 财务评价专章</div>
-    <h1>${s.projName||'（未命名项目）'}</h1>
-    <div class="rp-meta">建设地点：${s.projPlace||'—'}<span>｜</span>所属行业：${s.projIndustry||'—'}<span>｜</span>所在省份：${s.province||'—'}<span>｜</span>纳税人所在地：${LOC_LBL[s.location]||'—'}</div>
-    <div class="rp-meta">编制单位：${s.reportOrg||'—'}<span>｜</span>报告编号：${s.reportNo||'—'}<span>｜</span>报告日期：${s.reportDate||new Date().toLocaleDateString('zh-CN')}</div>
+    <h1>${escapeHtml(s.projName||'（未命名项目）')}</h1>
+    <div class="rp-meta">建设地点：${escapeHtml(s.projPlace||'—')}<span>｜</span>所属行业：${escapeHtml(s.projIndustry||'—')}<span>｜</span>所在省份：${escapeHtml(s.province||'—')}<span>｜</span>纳税人所在地：${LOC_LBL[s.location]||'—'}</div>
+    <div class="rp-meta">编制单位：${escapeHtml(s.reportOrg||'—')}<span>｜</span>报告编号：${escapeHtml(s.reportNo||'—')}<span>｜</span>报告日期：${escapeHtml(s.reportDate||new Date().toLocaleDateString('zh-CN'))}</div>
     <div class="rp-meta">计算期 ${nB+nO} 年（建设期 ${nB} 年 + 运营期 ${nO} 年）<span>｜</span>还款方式：${REPAY_LBL[s.repayMethod]}<span>｜</span>${INT_LBL[s.buildIntMode]}<span>｜</span>计算口径：${CAL_LBL[s.caliber]}<span>｜</span>基准收益率 ${pc(s.i0,0)}</div>
   </div>`);
 
@@ -1601,17 +1616,19 @@ function generate(){
     <div class="std">判断依据：NPV ≥ 0；项目税后 IRR ≥ ${pc(s.i0,2)}，资本金税后 IRR ≥ ${pc(s.i0Equity??s.i0,2)}；静态回收期 ≤ ${s.ptBase} 年；动态回收期 ≤ ${s.pdBase} 年；累计盈余资金各年 ≥ 0。</div>
   </div></div>`);
 
+  H.push(`<div class="rp-sec"><h3>第一次读报告：这些结果怎么理解？</h3><p class="rp-p">净现值 NPV 是未来净现金流按所选基准折算后与投入相比的净额。本次为 ${f2(M.ind.ai.npv)} 万元；${M.ind.ai.npv>=0?'在本次输入和折现基准下为非负。':'在本次输入和折现基准下为负，需复核收入、成本和投资假设。'}</p><p class="rp-p">内部收益率 IRR 表示使净现值为零的折现率。本次为 ${pc(M.ind.ai.irr)}，税后基准为 ${pc(s.i0)}。显示“—”可能是现金流无法在求解区间找到收益率，并不代表收益为零。</p><p class="rp-p">回收期衡量累计现金流何时收回投入。“未回收”表示在所设计算期内未收回，不能当作 0 年。指标达标仅针对当前参数和判断基准；默认参数、案例映射和待核政策应结合来源逐项复核。</p></div>`);
+
   /* ===== 编制说明 ===== */
   H.push(`<div class="rp-sec"><h3>编制说明与主要依据</h3>
     <div class="rp-h3">（一）编制范围</div>
-    <p class="rp-p">本报告为「${s.projName||'（未命名项目）'}」可行性研究的财务评价专章，依据《建设项目经济评价方法与参数》（第三版）的报表体系和指标口径编制，覆盖投资估算、融资方案、成本费用、营业收入与税金、流动资金、借款还本付息、利润分配、现金流量、资产负债、财务生存能力、盈亏平衡与敏感性分析。市场、技术、节能、环保、社会稳定等专项论证不在本报告范围内。</p>
+    <p class="rp-p">本报告为「${escapeHtml(s.projName||'（未命名项目）')}」可行性研究的财务评价专章，依据《建设项目经济评价方法与参数》（第三版）的报表体系和指标口径编制，覆盖投资估算、融资方案、成本费用、营业收入与税金、流动资金、借款还本付息、利润分配、现金流量、资产负债、财务生存能力、盈亏平衡与敏感性分析。市场、技术、节能、环保、社会稳定等专项论证不在本报告范围内。</p>
     <div class="rp-h3">（二）计算口径与价格体系</div>
     <p class="rp-p">计算期 ${nB+nO} 年（建设期 ${nB} 年、运营期 ${nO} 年），采用${CAL_LBL[s.caliber]}。${M.isCurrent
       ?'融资前现金流量独立于融资方案。资本金现金流量计入各年应还本付息。产品单价含税，营业收入按不含税金额列报，详见附表 8。'
       :'融资前现金流量按原表口径将建设期利息计入建设投资，资本金现金流量仅计长期借款利息，增值税沿用历史差额公式，用于复现 2024 年 Excel 案例。'}建设期利息按「${INT_LBL[s.buildIntMode]}」计算。</p>
     <div class="rp-h3">（三）主要参数与数据来源</div>
     <p class="rp-p">项目名称、建设地点、行业、计算期、生产负荷、工程费用、融资结构、折旧摊销年限、成本与价格、周转天数等参数由用户在参数录入页填写；参数录入页显示初始默认值。${s.caliber==='legacy'?'本报告为原表复现口径，默认税率 17%/4%/2% 仅用于与历史案例对照。':'当前增值税销项税率或简易征收率、城建税和教育附加按录入值测算。'}项目税前基准收益率为 ${pc(s.i0Pre??s.i0,2)}，项目税后为 ${pc(s.i0,2)}，资本金税后为 ${pc(s.i0Equity??s.i0,2)}。所得税按各年适用税率计算，亏损按当年零税额处理。基准静态回收期 ${s.ptBase} 年、动态回收期 ${s.pdBase} 年，均可在参数页调整。</p>
-    ${s.caseSource?`<p class="rp-p">案例数据来源：${s.caseSource}</p>`:''}
+    ${s.caseSource?`<p class="rp-p">案例数据来源：${escapeHtml(s.caseSource)}</p>`:''}
     <div class="rp-h3">（四）主要编制依据</div>
     ${basisTableHtml()}
     <p class="rp-note">以下为编制参考，适用性和现行效力须逐项复核；本报告附录 B 给出参数级合规检查清单，最终合规性以投资主管部门、财政部门和行业主管部门的审批意见为准。</p>
@@ -1624,7 +1641,7 @@ function generate(){
   H.push(table('附表 1　建设投资估算表（单位：万元）',
     `<tr><th class="l">工程或费用名称</th><th>建筑工程费</th><th>设备购置费</th><th>安装工程费</th><th>其他费用</th><th>合计</th></tr>`,
     [
-      ...M.eng.map(e=>tr(e.name,[e.build,e.equip,e.inst,null,e.total])),
+      ...M.eng.map(e=>tr(escapeHtml(e.name),[e.build,e.equip,e.inst,null,e.total])),
       tr('工程费用小计',[M.gBuild,M.gEquip,M.gInst,null,M.gEng],{hl:true}),
       tr('土地征用费',[null,null,null,M.land,M.land]),
       tr('开办费',[null,null,null,M.startup,M.startup]),
@@ -2108,7 +2125,7 @@ function finishReport(H,ctx){
   const secs=[...R.querySelectorAll('.rp-sec')];
   secs.forEach((sec,i)=>{sec.id='sec-'+(i+1);});
   if(secs.length){
-    const toc=`<nav class="rp-toc"><h3>目录</h3><ol>${secs.map((sec,i)=>`<li><a href="#sec-${i+1}">${sec.querySelector('h3')?.textContent||''}</a></li>`).join('')}</ol></nav>`;
+    const toc=`<nav class="rp-toc"><h3>目录</h3><ol>${secs.map((sec,i)=>`<li><a href="#sec-${i+1}">${escapeHtml(sec.querySelector('h3')?.textContent||'')}</a></li>`).join('')}</ol></nav>`;
     secs[0].insertAdjacentHTML('beforebegin',toc);
   }
   pgR.dataset.built='1';
@@ -2343,7 +2360,7 @@ function scenByVal(v){
 function refreshCmpSelects(){
   const scens=loadScens();
   const opts=`<option value="cur">当前参数（未保存的正在编辑方案）</option>`+
-    scens.map((sc,i)=>`<option value="${i}">${sc.name}</option>`).join('');
+    scens.map((sc,i)=>`<option value="${i}">${escapeHtml(sc.name)}</option>`).join('');
   const A=document.getElementById('cmpA'),B=document.getElementById('cmpB');
   A.innerHTML=opts;B.innerHTML=opts;
   if(scens.length){B.value='0';}
@@ -2376,9 +2393,9 @@ function buildCompare(){
   const passN=J=>J.items.filter(i=>i.pass).length;
   const applicableN=J=>J.items.filter(i=>i.pass!==null).length;
   let cards=`<div class="cmp-cards">
-    <div class="cmp-card"><div class="t">方案 A</div><div class="n">${A.name}</div>
+    <div class="cmp-card"><div class="t">方案 A</div><div class="n">${escapeHtml(A.name)}</div>
       <div class="m">${JA.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JA)}/${applicableN(JA)}）</div></div>
-    <div class="cmp-card"><div class="t">方案 B</div><div class="n">${B.name}</div>
+    <div class="cmp-card"><div class="t">方案 B</div><div class="n">${escapeHtml(B.name)}</div>
       <div class="m">${JB.passAll?'<span style="color:#166534;font-weight:700">✓ 财务可行</span>':'<span style="color:#b91c1c;font-weight:700">✕ 部分指标未达标</span>'}（达标 ${passN(JB)}/${applicableN(JB)}）</div></div>
   </div>`;
   let rows=CMP_ROWS.map(r=>{
@@ -2393,7 +2410,7 @@ function buildCompare(){
   }).join('');
   root.innerHTML=cards+
     `<div class="cmp-table-wrap"><table class="cmp"><caption>双方案指标对比（绿色为占优方案）</caption>
-     <thead><tr><th class="l">指标</th><th>方案 A：${A.name}</th><th>方案 B：${B.name}</th></tr></thead>
+     <thead><tr><th class="l">指标</th><th>方案 A：${escapeHtml(A.name)}</th><th>方案 B：${escapeHtml(B.name)}</th></tr></thead>
      <tbody>${rows}</tbody></table></div>
      <div class="cmp-charts"><div class="chart" id="chCmpNpv"></div><div class="chart" id="chCmpIrr"></div></div>
      <div class="cmp-radar"><div class="chart" id="chCmpRadar"></div></div>`;
@@ -2468,7 +2485,7 @@ function quizNumQ(q,correct,fmt,explain){
 }
 function buildQuiz(){
   const error=modelInputError(state);
-  if(error){toast(error);return;}
+  if(error){inputFailure();return;}
   normalizeState(state);
   const s=state;
   const M=computeModel(s,{inv:1});
@@ -2546,8 +2563,8 @@ function fileStem(s=lastReportState){
 }
 function ensureReport(){
   const error=modelInputError(state);
-  if(error){toast(error);return false;}
-  if(!lastM||JSON.stringify(normalizeState(clone(state)))!==JSON.stringify(lastReportState))return Boolean(generate());
+  if(error){inputFailure();return false;}
+  if(!lastM||JSON.stringify(normalizeState(clone(state)))!==JSON.stringify(lastReportState)){try{return Boolean(generate());}catch(e){console.error(e);showIssue('报告生成失败，输入已保留。请下载备份并反馈操作步骤。');return false;}}
   return true;
 }
 function exportExcel(){
@@ -2729,6 +2746,9 @@ function docxRuns(node,D,opt){
     if(n.nodeType===3){
       const t=n.textContent.replace(/\s+/g,' ');
       if(t.trim())runs.push(new D.TextRun({text:t,font,size,color,bold:!!opt.bold}));
+    }else if(n.nodeType===1&&n.tagName==='A'&&/^https?:\/\//.test(n.getAttribute('href')||'')){
+      runs.push(new D.ExternalHyperlink({link:n.getAttribute('href'),children:[new D.TextRun({text:n.textContent,font,size,color:'2F4BD7',underline:{}})]}));
+    }else if(n.nodeType===1&&n.tagName==='BR'){runs.push(new D.TextRun({break:1}));
     }else if(n.nodeType===1){
       docxRuns(n,D,{size,color,font,bold:!!opt.bold||n.tagName==='B'||n.tagName==='STRONG'}).forEach(r=>runs.push(r));
     }
@@ -2797,7 +2817,7 @@ function docxTableFromDom(tb,D,colIdx,capText){
           margins:cellMargins,
           shading:isHead?{fill:'F2F2F2',type:D.ShadingType.CLEAR}:(hl?{fill:'F7F5EF',type:D.ShadingType.CLEAR}:undefined),
           verticalAlign:D.VerticalAlign.CENTER,
-          children:[new D.Paragraph({alignment:align,spacing:{before:0,after:0,line:220},children:[new D.TextRun({text,font:'宋体',size:fs,bold:isHead||hl,color:/^-/.test(text)?'B02A37':'141625'})]})]
+          children:[new D.Paragraph({alignment:align,spacing:{before:0,after:0,line:220},children:docxRuns(c,D,{font:'宋体',size:fs,bold:isHead||hl,color:/^-/.test(text)?'B02A37':'141625'})})]
         });
       })});
     })
@@ -2968,15 +2988,16 @@ async function exportInteractiveHtml(){
   const css=[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
   const scripts=[...document.querySelectorAll('script')];
   const engineSrc=scripts.map(s=>s.textContent||'').find(t=>t.includes('function computeModel'))||'';
-  const chartSrc=scripts.map(s=>s.textContent||'').find(t=>t.includes('function renderCharts'))||'';
+  const chartBlock=scripts.map(s=>s.textContent||'').find(t=>t.includes('function renderCharts'))||'';
+  const chartSrc=chartBlock.slice(chartBlock.indexOf('const CH_INK'));
   let analysisSrc='';
   try{analysisSrc=await (await fetch('analysis.js')).text();}catch(e){}
   let echartsSrc='';
-  try{const r=await fetch('https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js');if(r.ok)echartsSrc=await r.text();}catch(e){}
-  if(!engineSrc||!chartSrc){toast('导出失败：未找到计算或图表脚本');return;}
+  try{const r=await fetch('vendor/echarts.min.js');if(r.ok)echartsSrc=await r.text();}catch(e){}
+  if(!engineSrc||!chartSrc||!echartsSrc)throw Error('报告或图表组件未能打包，请刷新重试');
   const safeScript=s=>String(s||'').replace(/<\/script/gi,'<\\/script');
   const stateJson=JSON.stringify(s).replace(/</g,'\\u003c');
-  const title=String(s.projName||'项目').replace(/[<>]/g,'');
+  const title=escapeHtml(s.projName||'项目');
   const html=`<!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3002,6 +3023,7 @@ ${analysisSrc?`<script>${safeScript(analysisSrc)}<\/script>`:''}
 <script>
   let state=${stateJson};
   let lastM=null;
+  const lastReportState=state;
   try{
     const M=computeModel(state);
     if(typeof analyzeModel==='function')M.analysis=analyzeModel(state,M,judge(state,M));
@@ -3071,8 +3093,8 @@ function calcAppendix(s,M){
   let h=`<div class="calc"><h4><span class="no">01</span>建设投资（附表 1）</h4>`;
   M.eng.forEach(e=>{
     const it=s.engItems.find(x=>x.name===e.name)||{};
-    h+=fx(e.name+' · 建筑工程费',`${it.qty} m² × ${it.price} 元/m² ÷ 10,000 = <b>${f2(e.build)} 万元</b>`);
-    h+=fx(e.name+' · 安装工程费',`${f2(e.equip)} × (1 − ${pc(s.freightRate,0)}) × ${pc(s.instRate,0)} = <b>${f2(e.inst)} 万元</b>`);
+    h+=fx(escapeHtml(e.name)+' · 建筑工程费',`${it.qty} m² × ${it.price} 元/m² ÷ 10,000 = <b>${f2(e.build)} 万元</b>`);
+    h+=fx(escapeHtml(e.name)+' · 安装工程费',`${f2(e.equip)} × (1 − ${pc(s.freightRate,0)}) × ${pc(s.instRate,0)} = <b>${f2(e.inst)} 万元</b>`);
   });
   h+=fx('工程费用小计',`${f2(M.gBuild)} + ${f2(M.gEquip)} + ${f2(M.gInst)} = <b>${f2(M.gEng)} 万元</b>`);
   h+=fx('其他费用小计',`土地 ${f2(M.land)} + 开办费 ${f2(M.startup)} + 专利技术 ${f2(M.patent)} = <b>${f2(M.gOther)} 万元</b>`);
@@ -3232,5 +3254,6 @@ window.addEventListener('load',()=>{
   if(lastM&&!pgR.hidden)renderCharts(lastReportState,lastM);
 });
 </script>
+<script src="trial.js?v=20261118"></script>
 </body>
 </html>
